@@ -1,0 +1,29 @@
+# Ignorar a pasta de build do Maven
+/target/
+
+# Ignorar arquivos temporários do Maven Wrapper
+.mvn/wrapper/maven-wrapper.jar
+
+# Ignorar arquivos de log
+*.log
+logs/
+
+# Ignorar arquivos de IDE (IntelliJ, Eclipse, VS Code)
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.settings/
+
+# Ignorar arquivos de sistema operacional
+.DS_Store
+Thumbs.db
+
+# Ignorar arquivos de configuração sensíveis (Opcional, mas recomendado!)
+# Se você tiver dados sensíveis como senhas no seu application.properties,
+# considere ignorá-lo e usar variáveis de ambiente ou outra forma de gestão de segredos.
+# application.properties
+# application.yml
