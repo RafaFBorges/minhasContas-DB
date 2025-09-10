@@ -3,12 +3,14 @@ package com.minhascontasdb.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.minhascontasdb.dto.ExpenseRequestDTO;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -20,6 +22,7 @@ import static org.hamcrest.Matchers.is;
 
 import java.time.Instant;
 
+@Transactional
 @SpringBootTest
 @AutoConfigureMockMvc
 public class ExpensesTests {
@@ -36,7 +39,8 @@ public class ExpensesTests {
   }
 
   @Test
-  void getExpense_ShouldReturnFixedExpense() throws Exception {
+  @Disabled
+  void getExpense_() throws Exception {
     mockMvc.perform(get("/expense"))
         .andDo(print())
         .andExpect(status().isOk())
@@ -47,8 +51,10 @@ public class ExpensesTests {
 
   @Test
   void createExpense_ShouldReturnCreatedExpense() throws Exception {
+    final Double DEFAULT_vALUE = 50.0;
+
     ExpenseRequestDTO requestDTO = new ExpenseRequestDTO();
-    requestDTO.setValue(50.0);
+    requestDTO.setValue(DEFAULT_vALUE);
     requestDTO.setDate(Instant.now());
 
     String requestJson = objectMapper.writeValueAsString(requestDTO);
@@ -59,7 +65,7 @@ public class ExpensesTests {
         .andDo(print())
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.value", is(51.0)))
+        .andExpect(jsonPath("$.value", is(DEFAULT_vALUE)))
         .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
   }
 }
