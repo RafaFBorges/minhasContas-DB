@@ -1,4 +1,4 @@
-package com.minhascontasdb.service;
+package com.minhascontasdb.dto;
 
 import java.time.Instant;
 
