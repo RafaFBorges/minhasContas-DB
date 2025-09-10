@@ -6,6 +6,4 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ExpensePersistence extends JpaRepository<Expense, Long> {
-
-  java.util.List<Expense> findByValue(double value);
 }
