@@ -16,6 +16,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,10 +38,11 @@ import static org.hamcrest.Matchers.is;
 @AutoConfigureMockMvc
 @Testcontainers
 public class ExpensesTests {
-  private static final Double DEFAULT_VALUE = 50.0;
+  private static final Double DEFAULT_VALUE = 42.0;
   private static final Instant FIXED_INSTANT = LocalDateTime.of(2025, 9, 10, 7, 18, 0)
       .atZone(ZoneId.of("America/Sao_Paulo")).toInstant();
-  private Expense savedExpense;
+  private static Expense savedExpense;
+
   @Autowired
   private MockMvc mockMvc;
 
@@ -54,13 +56,9 @@ public class ExpensesTests {
   @ServiceConnection
   static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:latest");
 
-  @BeforeEach
-  void setup() {
-    Expense expense = new Expense();
-
-    expense.setValue(DEFAULT_VALUE);
-    expense.setDate(FIXED_INSTANT);
-    this.savedExpense = expensePersistence.save(expense);
+  @Test
+  void contextLoads() {
+    // Teste básico para verificar se o contexto do Spring carrega corretamente.
   }
 
   @AfterEach
@@ -68,38 +66,45 @@ public class ExpensesTests {
     expensePersistence.deleteAll();
   }
 
-  @Test
-  void contextLoads() {
-    // Teste básico para verificar se o contexto do Spring carrega corretamente.
-  }
+  @Nested
+  class OnlyOneDataCenario {
+    @BeforeEach
+    void setup() {
+      Expense expense = new Expense();
 
-  // Teste para o endpoint GET /expense
-  @Test
-  void getExpense_ShouldReturnFixedExpense() throws Exception {
-    mockMvc.perform(get("/expense/{id}", savedExpense.getId()))
-        .andDo(print())
-        .andExpect(status().isOk())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
-        .andExpect(jsonPath("$.date", is(FIXED_INSTANT.toString())));
-  }
+      expense.setValue(DEFAULT_VALUE);
+      expense.setDate(FIXED_INSTANT);
+      ExpensesTests.savedExpense = expensePersistence.save(expense);
+    }
 
-  // Teste para o endpoint POST /expense
-  @Test
-  void createExpense_ShouldReturnCreatedExpense() throws Exception {
-    ExpenseRequestDTO requestDTO = new ExpenseRequestDTO();
-    requestDTO.setValue(DEFAULT_VALUE);
-    requestDTO.setDate(Instant.now());
+    // Teste para o endpoint GET /expense
+    @Test
+    void getExpense_ShouldReturnOnlyExpense() throws Exception {
+      mockMvc.perform(get("/expense/{id}", savedExpense.getId()))
+          .andDo(print())
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
+          .andExpect(jsonPath("$.date", is(FIXED_INSTANT.toString())));
+    }
 
-    String requestJson = objectMapper.writeValueAsString(requestDTO);
+    // Teste para o endpoint POST /expense
+    @Test
+    void createExpense_ShouldReturnCreatedExpense() throws Exception {
+      ExpenseRequestDTO requestDTO = new ExpenseRequestDTO();
+      requestDTO.setValue(DEFAULT_VALUE);
+      requestDTO.setDate(Instant.now());
 
-    mockMvc.perform(post("/expense")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(requestJson))
-        .andDo(print())
-        .andExpect(status().isOk())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
-        .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
+      String requestJson = objectMapper.writeValueAsString(requestDTO);
+
+      mockMvc.perform(post("/expense")
+          .contentType(MediaType.APPLICATION_JSON)
+          .content(requestJson))
+          .andDo(print())
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
+          .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
+    }
   }
 }
