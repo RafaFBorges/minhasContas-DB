@@ -67,7 +67,7 @@ public class ExpensesTests {
   }
 
   @Nested
-  class OnlyOneDataCenario {
+  class OnlyOneDataCase {
     @BeforeEach
     void setup() {
       Expense expense = new Expense();
