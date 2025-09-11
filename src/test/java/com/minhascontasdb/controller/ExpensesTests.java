@@ -34,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 @SpringBootTest
@@ -76,15 +77,27 @@ public class ExpensesTests {
       this.savedExpense = expensePersistence.save(new Expense(DEFAULT_VALUE, FIXED_INSTANT));
     }
 
-    // Teste para o endpoint GET /expense
+    // Teste para o endpoint GET /expense/{id}
     @Test
-    void getExpense_ShouldReturnRightExpenseWithID() throws Exception {
+    void getExpenseId_ShouldReturnRightExpenseWithID() throws Exception {
       mockMvc.perform(get("/expense/{id}", this.savedExpense.getId()))
           .andDo(print())
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
           .andExpect(jsonPath("$.date", is(FIXED_INSTANT.toString())));
+    }
+
+    // Teste para o endpoint GET /expense
+    @Test
+    void getExpense_ShouldReturnAllExpenses() throws Exception {
+      mockMvc.perform(get("/expense"))
+          .andDo(print())
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$", hasSize(1)))
+          .andExpect(jsonPath("$[0].value", is(DEFAULT_VALUE)))
+          .andExpect(jsonPath("$[0].date", is(FIXED_INSTANT.toString())));
     }
 
     // Teste para o endpoint POST /expense
@@ -112,12 +125,22 @@ public class ExpensesTests {
       // Deixado vazio de prropósito para não ter nenhum dado no DB
     }
 
-    // Teste para o endpoint GET /expense
+    // Teste para o endpoint GET /expense/{id}
     @Test
-    void getExpense_ShouldReturn404Error() throws Exception {
+    void getExpenseId_ShouldReturn404Error() throws Exception {
       mockMvc.perform(get("/expense/1"))
           .andDo(print())
           .andExpect(status().isNotFound());
+    }
+
+    // Teste para o endpoint GET /expense
+    @Test
+    void getExpense_ShouldReturnEmptyList() throws Exception {
+      mockMvc.perform(get("/expense"))
+          .andDo(print())
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$", hasSize(0)));
     }
 
     // Teste para o endpoint POST /expense
@@ -140,18 +163,19 @@ public class ExpensesTests {
 
   @Nested
   class MultipleExpensesCase {
+    private final Integer LIST_COUNT = 3;
     private List<Expense> savedExpenses = new ArrayList<>();
 
     @BeforeEach
     void setup() {
-      for (int i = 0; i < 3; i++)
+      for (int i = 0; i < this.LIST_COUNT; i++)
         this.savedExpenses.add(expensePersistence
             .save(new Expense(DEFAULT_VALUE + 1, FIXED_INSTANT.plusSeconds(i))));
     }
 
-    // Teste para o endpoint GET /expense
+    // Teste para o endpoint GET /expense/{id}
     @Test
-    void getExpense_ShouldReturnGetEachData() throws Exception {
+    void getExpenseId_ShouldReturnGetEachData() throws Exception {
       // foreach
       for (Expense expense : savedExpenses)
         mockMvc.perform(get("/expense/{id}", expense.getId()))
@@ -160,6 +184,21 @@ public class ExpensesTests {
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.value", is(expense.getValue())))
             .andExpect(jsonPath("$.date", is(expense.getDate().toString())));
+    }
+
+    @Test
+    void getExpense_ShouldReturnAllExpenses() throws Exception {
+      mockMvc.perform(get("/expense"))
+          .andDo(print())
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$", hasSize(this.LIST_COUNT)))
+          .andExpect(jsonPath("$[0].value", is(savedExpenses.get(0).getValue())))
+          .andExpect(jsonPath("$[0].date", is(savedExpenses.get(0).getDate().toString())))
+          .andExpect(jsonPath("$[1].value", is(savedExpenses.get(0).getValue())))
+          .andExpect(jsonPath("$[1].date", is(savedExpenses.get(1).getDate().toString())))
+          .andExpect(jsonPath("$[2].value", is(savedExpenses.get(0).getValue())))
+          .andExpect(jsonPath("$[2].date", is(savedExpenses.get(2).getDate().toString())));
     }
 
     // Teste para o endpoint POST /expense
