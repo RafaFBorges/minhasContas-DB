@@ -42,7 +42,7 @@ public class Expense {
   }
 
   public Instant getDate() {
-    return date;
+    return this.date;
   }
 
   public void setDate(Instant date) {

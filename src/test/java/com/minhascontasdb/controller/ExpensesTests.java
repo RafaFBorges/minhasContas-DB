@@ -3,6 +3,8 @@ package com.minhascontasdb.controller;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.minhascontasdb.dto.ExpenseRequestDTO;
 import com.minhascontasdb.persistence.ExpensePersistence;
@@ -41,7 +43,6 @@ public class ExpensesTests {
   private static final Double DEFAULT_VALUE = 42.0;
   private static final Instant FIXED_INSTANT = LocalDateTime.of(2025, 9, 10, 7, 18, 0)
       .atZone(ZoneId.of("America/Sao_Paulo")).toInstant();
-  private static Expense savedExpense;
 
   @Autowired
   private MockMvc mockMvc;
@@ -68,19 +69,17 @@ public class ExpensesTests {
 
   @Nested
   class OnlyOneDataCase {
+    private Expense savedExpense;
+
     @BeforeEach
     void setup() {
-      Expense expense = new Expense();
-
-      expense.setValue(DEFAULT_VALUE);
-      expense.setDate(FIXED_INSTANT);
-      ExpensesTests.savedExpense = expensePersistence.save(expense);
+      this.savedExpense = expensePersistence.save(new Expense(DEFAULT_VALUE, FIXED_INSTANT));
     }
 
     // Teste para o endpoint GET /expense
     @Test
     void getExpense_ShouldReturnRightExpenseWithID() throws Exception {
-      mockMvc.perform(get("/expense/{id}", savedExpense.getId()))
+      mockMvc.perform(get("/expense/{id}", this.savedExpense.getId()))
           .andDo(print())
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -91,9 +90,7 @@ public class ExpensesTests {
     // Teste para o endpoint POST /expense
     @Test
     void createExpense_ShouldReturnCreatedExpense() throws Exception {
-      ExpenseRequestDTO requestDTO = new ExpenseRequestDTO();
-      requestDTO.setValue(DEFAULT_VALUE);
-      requestDTO.setDate(Instant.now());
+      ExpenseRequestDTO requestDTO = new ExpenseRequestDTO(DEFAULT_VALUE, Instant.now());
 
       String requestJson = objectMapper.writeValueAsString(requestDTO);
 
@@ -126,9 +123,49 @@ public class ExpensesTests {
     // Teste para o endpoint POST /expense
     @Test
     void createExpense_ShouldReturnCreatedExpense() throws Exception {
-      ExpenseRequestDTO requestDTO = new ExpenseRequestDTO();
-      requestDTO.setValue(DEFAULT_VALUE);
-      requestDTO.setDate(Instant.now());
+      ExpenseRequestDTO requestDTO = new ExpenseRequestDTO(DEFAULT_VALUE, Instant.now());
+
+      String requestJson = objectMapper.writeValueAsString(requestDTO);
+
+      mockMvc.perform(post("/expense")
+          .contentType(MediaType.APPLICATION_JSON)
+          .content(requestJson))
+          .andDo(print())
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
+          .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
+    }
+  }
+
+  @Nested
+  class MultipleExpensesCase {
+    private List<Expense> savedExpenses = new ArrayList<>();
+
+    @BeforeEach
+    void setup() {
+      for (int i = 0; i < 3; i++)
+        this.savedExpenses.add(expensePersistence
+            .save(new Expense(DEFAULT_VALUE + 1, FIXED_INSTANT.plusSeconds(i))));
+    }
+
+    // Teste para o endpoint GET /expense
+    @Test
+    void getExpense_ShouldReturnGetEachData() throws Exception {
+      // foreach
+      for (Expense expense : savedExpenses)
+        mockMvc.perform(get("/expense/{id}", expense.getId()))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.value", is(expense.getValue())))
+            .andExpect(jsonPath("$.date", is(expense.getDate().toString())));
+    }
+
+    // Teste para o endpoint POST /expense
+    @Test
+    void createExpense_ShouldReturnCreatedExpense() throws Exception {
+      ExpenseRequestDTO requestDTO = new ExpenseRequestDTO(DEFAULT_VALUE, Instant.now());
 
       String requestJson = objectMapper.writeValueAsString(requestDTO);
 

@@ -8,6 +8,12 @@ public class ExpenseRequestDTO {
   private Instant date;
 
   public ExpenseRequestDTO() {
+    this(0.0, null);
+  }
+
+  public ExpenseRequestDTO(double value, Instant date) {
+    this.value = value;
+    this.date = date;
   }
 
   public double getValue() {
