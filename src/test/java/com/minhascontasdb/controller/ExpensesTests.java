@@ -1,16 +1,29 @@
 package com.minhascontasdb.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.minhascontasdb.dto.ExpenseRequestDTO;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
-import org.junit.jupiter.api.Disabled;
+import com.minhascontasdb.dto.ExpenseRequestDTO;
+import com.minhascontasdb.persistence.ExpensePersistence;
+import com.minhascontasdb.service.Expense;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -20,41 +33,62 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.hamcrest.Matchers.is;
 
-import java.time.Instant;
-
-@Transactional
 @SpringBootTest
 @AutoConfigureMockMvc
+@Testcontainers
 public class ExpensesTests {
-
+  private static final Double DEFAULT_VALUE = 50.0;
+  private static final Instant FIXED_INSTANT = LocalDateTime.of(2025, 9, 10, 7, 18, 0)
+      .atZone(ZoneId.of("America/Sao_Paulo")).toInstant();
+  private Expense savedExpense;
   @Autowired
   private MockMvc mockMvc;
 
   @Autowired
   private ObjectMapper objectMapper;
 
+  @Autowired
+  private ExpensePersistence expensePersistence;
+
+  @Container
+  @ServiceConnection
+  static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:latest");
+
+  @BeforeEach
+  void setup() {
+    Expense expense = new Expense();
+
+    expense.setValue(DEFAULT_VALUE);
+    expense.setDate(FIXED_INSTANT);
+    this.savedExpense = expensePersistence.save(expense);
+  }
+
+  @AfterEach
+  void teardown() {
+    expensePersistence.deleteAll();
+  }
+
   @Test
   void contextLoads() {
     // Teste básico para verificar se o contexto do Spring carrega corretamente.
   }
 
+  // Teste para o endpoint GET /expense
   @Test
-  @Disabled
-  void getExpense_() throws Exception {
-    mockMvc.perform(get("/expense"))
+  void getExpense_ShouldReturnFixedExpense() throws Exception {
+    mockMvc.perform(get("/expense/{id}", savedExpense.getId()))
         .andDo(print())
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.value", is(10.0)))
-        .andExpect(jsonPath("$.date").exists());
+        .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
+        .andExpect(jsonPath("$.date", is(FIXED_INSTANT.toString())));
   }
 
+  // Teste para o endpoint POST /expense
   @Test
   void createExpense_ShouldReturnCreatedExpense() throws Exception {
-    final Double DEFAULT_vALUE = 50.0;
-
     ExpenseRequestDTO requestDTO = new ExpenseRequestDTO();
-    requestDTO.setValue(DEFAULT_vALUE);
+    requestDTO.setValue(DEFAULT_VALUE);
     requestDTO.setDate(Instant.now());
 
     String requestJson = objectMapper.writeValueAsString(requestDTO);
@@ -65,7 +99,7 @@ public class ExpensesTests {
         .andDo(print())
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.value", is(DEFAULT_vALUE)))
+        .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
         .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
   }
 }
