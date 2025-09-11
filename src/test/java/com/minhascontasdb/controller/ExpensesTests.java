@@ -79,13 +79,48 @@ public class ExpensesTests {
 
     // Teste para o endpoint GET /expense
     @Test
-    void getExpense_ShouldReturnOnlyExpense() throws Exception {
+    void getExpense_ShouldReturnRightExpenseWithID() throws Exception {
       mockMvc.perform(get("/expense/{id}", savedExpense.getId()))
           .andDo(print())
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
           .andExpect(jsonPath("$.date", is(FIXED_INSTANT.toString())));
+    }
+
+    // Teste para o endpoint POST /expense
+    @Test
+    void createExpense_ShouldReturnCreatedExpense() throws Exception {
+      ExpenseRequestDTO requestDTO = new ExpenseRequestDTO();
+      requestDTO.setValue(DEFAULT_VALUE);
+      requestDTO.setDate(Instant.now());
+
+      String requestJson = objectMapper.writeValueAsString(requestDTO);
+
+      mockMvc.perform(post("/expense")
+          .contentType(MediaType.APPLICATION_JSON)
+          .content(requestJson))
+          .andDo(print())
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
+          .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
+    }
+  }
+
+  @Nested
+  class EmptyCase {
+    @BeforeEach
+    void setup() {
+      // Deixado vazio de prropósito para não ter nenhum dado no DB
+    }
+
+    // Teste para o endpoint GET /expense
+    @Test
+    void getExpense_ShouldReturn404Error() throws Exception {
+      mockMvc.perform(get("/expense/1"))
+          .andDo(print())
+          .andExpect(status().isNotFound());
     }
 
     // Teste para o endpoint POST /expense
