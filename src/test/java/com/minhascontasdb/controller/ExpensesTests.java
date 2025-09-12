@@ -3,6 +3,7 @@ package com.minhascontasdb.controller;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +31,7 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -116,6 +118,38 @@ public class ExpensesTests {
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
           .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
     }
+
+    // Teste para endpoint PUT /expense
+    @Test
+    void putExpense_ShouldEditTheValue() throws Exception {
+      // Verificar que o valor esta no banco de dados
+      mockMvc.perform(get("/expense/{id}", this.savedExpense.getId()))
+          .andDo(print())
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
+          .andExpect(jsonPath("$.date", is(FIXED_INSTANT.toString())));
+
+      ExpenseRequestDTO requestDTO = new ExpenseRequestDTO(DEFAULT_VALUE * 2,
+          FIXED_INSTANT.plusSeconds(100).truncatedTo(ChronoUnit.SECONDS));
+      String requestJson = objectMapper.writeValueAsString(requestDTO);
+
+      mockMvc.perform(put("/expense/{id}", this.savedExpense.getId())
+          .contentType(MediaType.APPLICATION_JSON)
+          .content(requestJson))
+          .andDo(print())
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.value", is(DEFAULT_VALUE * 2)))
+          .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
+
+      mockMvc.perform(get("/expense/{id}", this.savedExpense.getId()))
+          .andDo(print())
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.value", is(DEFAULT_VALUE * 2)))
+          .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
+    }
   }
 
   @Nested
@@ -159,6 +193,19 @@ public class ExpensesTests {
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
           .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
     }
+
+    // Teste para endpoint PUT /expense
+    @Test
+    void putExpense_ShouldReturn404Error() throws Exception {
+      ExpenseRequestDTO requestDTO = new ExpenseRequestDTO(DEFAULT_VALUE * 2, Instant.now());
+      String requestJson = objectMapper.writeValueAsString(requestDTO);
+
+      mockMvc.perform(put("/expense/1")
+          .contentType(MediaType.APPLICATION_JSON)
+          .content(requestJson))
+          .andDo(print())
+          .andExpect(status().isNotFound());
+    }
   }
 
   @Nested
@@ -176,7 +223,6 @@ public class ExpensesTests {
     // Teste para o endpoint GET /expense/{id}
     @Test
     void getExpenseId_ShouldReturnGetEachData() throws Exception {
-      // foreach
       for (Expense expense : savedExpenses)
         mockMvc.perform(get("/expense/{id}", expense.getId()))
             .andDo(print())
@@ -186,6 +232,7 @@ public class ExpensesTests {
             .andExpect(jsonPath("$.date", is(expense.getDate().toString())));
     }
 
+    // Teste para o endpoint GET /expense
     @Test
     void getExpense_ShouldReturnAllExpenses() throws Exception {
       mockMvc.perform(get("/expense"))
@@ -205,7 +252,6 @@ public class ExpensesTests {
     @Test
     void createExpense_ShouldReturnCreatedExpense() throws Exception {
       ExpenseRequestDTO requestDTO = new ExpenseRequestDTO(DEFAULT_VALUE, Instant.now());
-
       String requestJson = objectMapper.writeValueAsString(requestDTO);
 
       mockMvc.perform(post("/expense")
@@ -216,6 +262,44 @@ public class ExpensesTests {
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
           .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
+    }
+
+    // Teste para endpoint PUT /expense
+    @Test
+    void putExpense_ShouldEditTheValue() throws Exception {
+      // Verificar que o valor esta no banco de dados
+      final Integer UPDATE_INDEX = 1;
+
+      for (Expense expense : savedExpenses)
+        mockMvc.perform(get("/expense/{id}", expense.getId()))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.value", is(expense.getValue())))
+            .andExpect(jsonPath("$.date", is(expense.getDate().toString())));
+
+      ExpenseRequestDTO requestDTO = new ExpenseRequestDTO(DEFAULT_VALUE * 2,
+          FIXED_INSTANT.plusSeconds(100).truncatedTo(ChronoUnit.SECONDS));
+      String requestJson = objectMapper.writeValueAsString(requestDTO);
+      savedExpenses.get(UPDATE_INDEX).setValue(requestDTO.getValue());
+      savedExpenses.get(UPDATE_INDEX).setDate(requestDTO.getDate());
+
+      mockMvc.perform(put("/expense/{id}", savedExpenses.get(UPDATE_INDEX).getId())
+          .contentType(MediaType.APPLICATION_JSON)
+          .content(requestJson))
+          .andDo(print())
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.value", is(DEFAULT_VALUE * 2)))
+          .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
+
+      for (Expense expense : savedExpenses)
+        mockMvc.perform(get("/expense/{id}", expense.getId()))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.value", is(expense.getValue())))
+            .andExpect(jsonPath("$.date", is(expense.getDate().toString())));
     }
   }
 }

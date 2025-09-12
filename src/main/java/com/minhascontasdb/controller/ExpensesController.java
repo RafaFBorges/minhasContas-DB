@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,5 +48,20 @@ public class ExpensesController {
     Expense savedExpense = expensePersistence.save(newExpense);
 
     return ResponseEntity.ok(savedExpense);
+  }
+
+  @PutMapping("/{id}")
+  public ResponseEntity<Expense> updateExpense(@PathVariable Long id, @RequestBody ExpenseRequestDTO dto) {
+    Optional<Expense> existingExpense = expensePersistence.findById(id);
+
+    if (!existingExpense.isPresent())
+      return ResponseEntity.notFound().build();
+
+    Expense expenseToUpdate = existingExpense.get();
+    expenseToUpdate.setValue(dto.getValue());
+    expenseToUpdate.setDate(dto.getDate());
+
+    Expense updatedExpense = expensePersistence.save(expenseToUpdate);
+    return ResponseEntity.ok(updatedExpense);
   }
 }
