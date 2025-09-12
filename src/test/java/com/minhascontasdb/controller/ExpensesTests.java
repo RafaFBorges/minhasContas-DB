@@ -29,6 +29,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -83,7 +84,6 @@ public class ExpensesTests {
     @Test
     void getExpenseId_ShouldReturnRightExpenseWithID() throws Exception {
       mockMvc.perform(get("/expense/{id}", this.savedExpense.getId()))
-          .andDo(print())
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
@@ -94,7 +94,6 @@ public class ExpensesTests {
     @Test
     void getExpense_ShouldReturnAllExpenses() throws Exception {
       mockMvc.perform(get("/expense"))
-          .andDo(print())
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$", hasSize(1)))
@@ -112,7 +111,6 @@ public class ExpensesTests {
       mockMvc.perform(post("/expense")
           .contentType(MediaType.APPLICATION_JSON)
           .content(requestJson))
-          .andDo(print())
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
@@ -124,7 +122,6 @@ public class ExpensesTests {
     void putExpense_ShouldEditTheValue() throws Exception {
       // Verificar que o valor esta no banco de dados
       mockMvc.perform(get("/expense/{id}", this.savedExpense.getId()))
-          .andDo(print())
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
@@ -137,18 +134,26 @@ public class ExpensesTests {
       mockMvc.perform(put("/expense/{id}", this.savedExpense.getId())
           .contentType(MediaType.APPLICATION_JSON)
           .content(requestJson))
-          .andDo(print())
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE * 2)))
           .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
 
       mockMvc.perform(get("/expense/{id}", this.savedExpense.getId()))
-          .andDo(print())
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE * 2)))
           .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
+    }
+
+    // Teste para endpoint DELETE /expense
+    @Test
+    void deleteExpense_ShouldReturnNoContentAndRemoveExpense() throws Exception {
+      mockMvc.perform(delete("/expense/{id}", savedExpense.getId()))
+          .andExpect(status().isNoContent());
+
+      mockMvc.perform(get("/expense/{id}", savedExpense.getId()))
+          .andExpect(status().isNotFound());
     }
   }
 
@@ -163,7 +168,6 @@ public class ExpensesTests {
     @Test
     void getExpenseId_ShouldReturn404Error() throws Exception {
       mockMvc.perform(get("/expense/1"))
-          .andDo(print())
           .andExpect(status().isNotFound());
     }
 
@@ -171,7 +175,6 @@ public class ExpensesTests {
     @Test
     void getExpense_ShouldReturnEmptyList() throws Exception {
       mockMvc.perform(get("/expense"))
-          .andDo(print())
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$", hasSize(0)));
@@ -187,7 +190,6 @@ public class ExpensesTests {
       mockMvc.perform(post("/expense")
           .contentType(MediaType.APPLICATION_JSON)
           .content(requestJson))
-          .andDo(print())
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
@@ -203,7 +205,13 @@ public class ExpensesTests {
       mockMvc.perform(put("/expense/1")
           .contentType(MediaType.APPLICATION_JSON)
           .content(requestJson))
-          .andDo(print())
+          .andExpect(status().isNotFound());
+    }
+
+    // Teste para endpoint DELETE /expense
+    @Test
+    void deleteExpense_ShouldReturnNoContent() throws Exception {
+      mockMvc.perform(delete("/expense/1"))
           .andExpect(status().isNotFound());
     }
   }
@@ -236,7 +244,6 @@ public class ExpensesTests {
     @Test
     void getExpense_ShouldReturnAllExpenses() throws Exception {
       mockMvc.perform(get("/expense"))
-          .andDo(print())
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$", hasSize(this.LIST_COUNT)))
@@ -257,7 +264,6 @@ public class ExpensesTests {
       mockMvc.perform(post("/expense")
           .contentType(MediaType.APPLICATION_JSON)
           .content(requestJson))
-          .andDo(print())
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
@@ -287,12 +293,32 @@ public class ExpensesTests {
       mockMvc.perform(put("/expense/{id}", savedExpenses.get(UPDATE_INDEX).getId())
           .contentType(MediaType.APPLICATION_JSON)
           .content(requestJson))
-          .andDo(print())
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE * 2)))
           .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
 
+      for (Expense expense : savedExpenses)
+        mockMvc.perform(get("/expense/{id}", expense.getId()))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.value", is(expense.getValue())))
+            .andExpect(jsonPath("$.date", is(expense.getDate().toString())));
+    }
+
+    // Teste para endpoint DELETE /expense
+    @Test
+    void deleteExpense_ShouldReturnNoContentAndRemoveExpense() throws Exception {
+      final Integer DELETE_INDEX = 1;
+
+      mockMvc.perform(delete("/expense/{id}", savedExpenses.get(DELETE_INDEX).getId()))
+          .andExpect(status().isNoContent());
+
+      mockMvc.perform(get("/expense/{id}", savedExpenses.get(DELETE_INDEX).getId()))
+          .andExpect(status().isNotFound());
+
+      savedExpenses.remove(savedExpenses.get(DELETE_INDEX));
       for (Expense expense : savedExpenses)
         mockMvc.perform(get("/expense/{id}", expense.getId()))
             .andDo(print())

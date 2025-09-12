@@ -9,6 +9,7 @@ import com.minhascontasdb.service.Expense;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -63,5 +64,14 @@ public class ExpensesController {
 
     Expense updatedExpense = expensePersistence.save(expenseToUpdate);
     return ResponseEntity.ok(updatedExpense);
+  }
+
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> deleteExpense(@PathVariable Long id) {
+    if (!expensePersistence.existsById(id))
+      return ResponseEntity.notFound().build();
+
+    expensePersistence.deleteById(id);
+    return ResponseEntity.noContent().build();
   }
 }
