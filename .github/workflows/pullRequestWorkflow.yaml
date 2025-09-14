@@ -2,8 +2,8 @@ name: Build e Teste do Projeto
 
 on:
 
-BasicTest on main branch.
-
+O workflow será executado quando houver um push para o branch principal
+ou quando um pull request for aberto.
 push:
 branches: [ "main" ]
 pull_request:
