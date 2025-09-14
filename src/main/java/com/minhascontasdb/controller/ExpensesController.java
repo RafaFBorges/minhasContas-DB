@@ -1,9 +1,11 @@
 package com.minhascontasdb.controller;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 import com.minhascontasdb.dto.ExpenseRequestDTO;
+import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
 import com.minhascontasdb.persistence.ExpensePersistence;
 import com.minhascontasdb.service.Expense;
 
@@ -52,15 +54,20 @@ public class ExpensesController {
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<Expense> updateExpense(@PathVariable Long id, @RequestBody ExpenseRequestDTO dto) {
+  public ResponseEntity<?> updateExpense(@PathVariable Long id, @RequestBody ExpenseRequestDTO dto) {
+    if (!dto.isValidValue())
+      return ResponseEntity.badRequest().body(new InvalidArgumentsError());
+
+    if (dto.getDate() == null)
+      dto.setDate(Instant.now());
+
     Optional<Expense> existingExpense = expensePersistence.findById(id);
 
     if (!existingExpense.isPresent())
       return ResponseEntity.notFound().build();
 
     Expense expenseToUpdate = existingExpense.get();
-    expenseToUpdate.setValue(dto.getValue());
-    expenseToUpdate.setDate(dto.getDate());
+    expenseToUpdate.setValue(dto.getValue(), dto.getDate());
 
     Expense updatedExpense = expensePersistence.save(expenseToUpdate);
     return ResponseEntity.ok(updatedExpense);

@@ -8,7 +8,7 @@ public class ExpenseRequestDTO {
   private Instant date;
 
   public ExpenseRequestDTO() {
-    this(0.0, null);
+    this(-1.0, null);
   }
 
   public ExpenseRequestDTO(double value, Instant date) {
@@ -30,5 +30,9 @@ public class ExpenseRequestDTO {
 
   public void setDate(Instant date) {
     this.date = date;
+  }
+
+  public Boolean isValidValue() {
+    return 0 <= this.value;
   }
 }
