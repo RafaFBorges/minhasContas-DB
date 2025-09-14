@@ -59,8 +59,7 @@ public class ExpensesController {
       return ResponseEntity.notFound().build();
 
     Expense expenseToUpdate = existingExpense.get();
-    expenseToUpdate.setValue(dto.getValue());
-    expenseToUpdate.setDate(dto.getDate());
+    expenseToUpdate.setValue(dto.getValue(), dto.getDate());
 
     Expense updatedExpense = expensePersistence.save(expenseToUpdate);
     return ResponseEntity.ok(updatedExpense);

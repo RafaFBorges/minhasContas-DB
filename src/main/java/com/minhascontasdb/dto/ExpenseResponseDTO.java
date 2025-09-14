@@ -1,35 +1,33 @@
 package com.minhascontasdb.dto;
 
 import java.time.Instant;
+import java.util.List;
 
 public class ExpenseResponseDTO {
 
   private double value;
-  private Instant date;
-
-  public ExpenseResponseDTO(double value) {
-    this.value = value;
-    this.date = Instant.now();
-  }
+  private List<Instant> date;
 
   public ExpenseResponseDTO(double value, Instant date) {
     this.value = value;
-    this.date = date;
+    this.date.add(date);
+  }
+
+  public ExpenseResponseDTO(double value, List<Instant> dateList) {
+    this.value = value;
+    this.date = dateList;
   }
 
   public double getValue() {
     return value;
   }
 
-  public Instant getDate() {
+  public List<Instant> getDates() {
     return date;
   }
 
-  public void setValue(double value) {
+  public void setValue(double value, Instant date) {
     this.value = value;
-  }
-
-  public void setDate(Instant date) {
-    this.date = date;
+    this.date.add(date);
   }
 }

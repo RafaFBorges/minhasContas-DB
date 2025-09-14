@@ -87,7 +87,7 @@ public class ExpensesTests {
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
-          .andExpect(jsonPath("$.date", is(FIXED_INSTANT.toString())));
+          .andExpect(jsonPath("$.dates[-1]", is(FIXED_INSTANT.toString())));
     }
 
     // Teste para o endpoint GET /expense
@@ -98,7 +98,7 @@ public class ExpensesTests {
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$", hasSize(1)))
           .andExpect(jsonPath("$[0].value", is(DEFAULT_VALUE)))
-          .andExpect(jsonPath("$[0].date", is(FIXED_INSTANT.toString())));
+          .andExpect(jsonPath("$[0].dates[-1]", is(FIXED_INSTANT.toString())));
     }
 
     // Teste para o endpoint POST /expense
@@ -114,7 +114,7 @@ public class ExpensesTests {
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
-          .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
+          .andExpect(jsonPath("$.dates[-1]", is(requestDTO.getDate().toString())));
     }
 
     // Teste para endpoint PUT /expense
@@ -125,7 +125,7 @@ public class ExpensesTests {
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
-          .andExpect(jsonPath("$.date", is(FIXED_INSTANT.toString())));
+          .andExpect(jsonPath("$.dates[-1]", is(FIXED_INSTANT.toString())));
 
       ExpenseRequestDTO requestDTO = new ExpenseRequestDTO(DEFAULT_VALUE * 2,
           FIXED_INSTANT.plusSeconds(100).truncatedTo(ChronoUnit.SECONDS));
@@ -137,13 +137,13 @@ public class ExpensesTests {
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE * 2)))
-          .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
+          .andExpect(jsonPath("$.dates[-1]", is(requestDTO.getDate().toString())));
 
       mockMvc.perform(get("/expense/{id}", this.savedExpense.getId()))
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE * 2)))
-          .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
+          .andExpect(jsonPath("$.dates[-1]", is(requestDTO.getDate().toString())));
     }
 
     // Teste para endpoint DELETE /expense
@@ -193,7 +193,7 @@ public class ExpensesTests {
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
-          .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
+          .andExpect(jsonPath("$.dates[-1]", is(requestDTO.getDate().toString())));
     }
 
     // Teste para endpoint PUT /expense
@@ -237,7 +237,7 @@ public class ExpensesTests {
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.value", is(expense.getValue())))
-            .andExpect(jsonPath("$.date", is(expense.getDate().toString())));
+            .andExpect(jsonPath("$.dates[-1]", is(expense.getLastDate().toString())));
     }
 
     // Teste para o endpoint GET /expense
@@ -248,11 +248,11 @@ public class ExpensesTests {
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$", hasSize(this.LIST_COUNT)))
           .andExpect(jsonPath("$[0].value", is(savedExpenses.get(0).getValue())))
-          .andExpect(jsonPath("$[0].date", is(savedExpenses.get(0).getDate().toString())))
+          .andExpect(jsonPath("$[0].dates[-1]", is(savedExpenses.get(0).getLastDate().toString())))
           .andExpect(jsonPath("$[1].value", is(savedExpenses.get(0).getValue())))
-          .andExpect(jsonPath("$[1].date", is(savedExpenses.get(1).getDate().toString())))
+          .andExpect(jsonPath("$[1].dates[-1]", is(savedExpenses.get(1).getLastDate().toString())))
           .andExpect(jsonPath("$[2].value", is(savedExpenses.get(0).getValue())))
-          .andExpect(jsonPath("$[2].date", is(savedExpenses.get(2).getDate().toString())));
+          .andExpect(jsonPath("$[2].dates[-1]", is(savedExpenses.get(2).getLastDate().toString())));
     }
 
     // Teste para o endpoint POST /expense
@@ -267,7 +267,7 @@ public class ExpensesTests {
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
-          .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
+          .andExpect(jsonPath("$.dates[-1]", is(requestDTO.getDate().toString())));
     }
 
     // Teste para endpoint PUT /expense
@@ -282,13 +282,12 @@ public class ExpensesTests {
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.value", is(expense.getValue())))
-            .andExpect(jsonPath("$.date", is(expense.getDate().toString())));
+            .andExpect(jsonPath("$.dates[-1]", is(expense.getLastDate().toString())));
 
       ExpenseRequestDTO requestDTO = new ExpenseRequestDTO(DEFAULT_VALUE * 2,
           FIXED_INSTANT.plusSeconds(100).truncatedTo(ChronoUnit.SECONDS));
       String requestJson = objectMapper.writeValueAsString(requestDTO);
-      savedExpenses.get(UPDATE_INDEX).setValue(requestDTO.getValue());
-      savedExpenses.get(UPDATE_INDEX).setDate(requestDTO.getDate());
+      savedExpenses.get(UPDATE_INDEX).setValue(requestDTO.getValue(), requestDTO.getDate());
 
       mockMvc.perform(put("/expense/{id}", savedExpenses.get(UPDATE_INDEX).getId())
           .contentType(MediaType.APPLICATION_JSON)
@@ -296,7 +295,7 @@ public class ExpensesTests {
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE * 2)))
-          .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
+          .andExpect(jsonPath("$.dates[-1]", is(requestDTO.getDate().toString())));
 
       for (Expense expense : savedExpenses)
         mockMvc.perform(get("/expense/{id}", expense.getId()))
@@ -304,7 +303,7 @@ public class ExpensesTests {
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.value", is(expense.getValue())))
-            .andExpect(jsonPath("$.date", is(expense.getDate().toString())));
+            .andExpect(jsonPath("$.dates[-1]", is(expense.getLastDate().toString())));
     }
 
     // Teste para endpoint DELETE /expense
@@ -325,7 +324,7 @@ public class ExpensesTests {
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.value", is(expense.getValue())))
-            .andExpect(jsonPath("$.date", is(expense.getDate().toString())));
+            .andExpect(jsonPath("$.dates[-1]", is(expense.getLastDate().toString())));
     }
   }
 }
