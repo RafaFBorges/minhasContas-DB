@@ -1,0 +1,35 @@
+name: Build e Teste do Projeto
+
+on:
+
+BasicTest on main branch.
+
+push:
+branches: [ "main" ]
+pull_request:
+branches: [ "main" ]
+
+jobs:
+build:
+# Nome do ambiente onde o job vai rodar.
+# O "ubuntu-latest" é uma máquina virtual que já vem com as ferramentas básicas.
+runs-on: ubuntu-latest
+
+steps:
+# 1. Checkout do código
+# Ação que baixa o seu repositório para a máquina virtual.
+- uses: actions/checkout@v4
+
+# 2. Configuração do ambiente Java
+# Ação que configura o JDK (Java Development Kit) na versão 11.
+- name: Set up JDK 11
+  uses: actions/setup-java@v4
+  with:
+    java-version: '11'
+    distribution: 'temurin'
+    cache: maven
+
+# 3. Build e Testes do Maven
+# Comando para rodar o build e os testes do seu projeto com Maven.
+- name: Build with Maven
+  run: mvn -B clean install
