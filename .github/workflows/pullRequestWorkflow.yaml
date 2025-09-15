@@ -1,0 +1,41 @@
+name: Build e Teste do Projeto
+
+on:
+  # O workflow será executado quando houver um push para o branch principal
+  push:
+    branches: ["main"]
+  # Ou quando um pull request for aberto contra o branch principal
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_DB: minhascontas
+          POSTGRES_USER: usuario
+          POSTGRES_PASSWORD: senha
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn -B clean install
