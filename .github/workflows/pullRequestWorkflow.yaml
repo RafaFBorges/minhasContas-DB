@@ -54,5 +54,19 @@ jobs:
           distribution: "temurin"
           cache: maven
 
+      - name: Carregar variáveis do .env no ambiente
+        run: |
+          if [ -f .env ]; then
+            echo "Carregando variáveis do .env..."
+            while IFS= read -r line; do
+              if [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
+                echo "$line" >> $GITHUB_ENV
+              fi
+            done < .env
+          else
+            echo "Arquivo .env não encontrado!"
+            exit 1
+          fi
+
       - name: Executar os testes
         run: mvn test
