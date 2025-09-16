@@ -27,3 +27,4 @@ Thumbs.db
 # considere ignorá-lo e usar variáveis de ambiente ou outra forma de gestão de segredos.
 # application.properties
 # application.yml
+.env
