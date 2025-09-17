@@ -35,9 +35,9 @@ jobs:
         ports:
           - 5432:5432
         env:
-          POSTGRES_DB: minhascontas
-          POSTGRES_USER: usuario
-          POSTGRES_PASSWORD: senha
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -54,19 +54,11 @@ jobs:
           distribution: "temurin"
           cache: maven
 
-      - name: Carregar variáveis do .env no ambiente
+      - name: Definir variáveis de ambiente a partir dos secrets
         run: |
-          if [ -f .env ]; then
-            echo "Carregando variáveis do .env..."
-            while IFS= read -r line; do
-              if [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
-                echo "$line" >> $GITHUB_ENV
-              fi
-            done < .env
-          else
-            echo "Arquivo .env não encontrado!"
-            exit 1
-          fi
+          echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" >> $GITHUB_ENV
+          echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> $GITHUB_ENV
+          echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> $GITHUB_ENV
 
       - name: Executar os testes
         run: mvn test
