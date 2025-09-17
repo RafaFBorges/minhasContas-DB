@@ -26,7 +26,7 @@ jobs:
         run: mvn -B clean compile
 
       - name: Build do Docker com Docker Compose
-        run: docker-compose build
+        run: docker compose build
 
   test:
     runs-on: ubuntu-latest
