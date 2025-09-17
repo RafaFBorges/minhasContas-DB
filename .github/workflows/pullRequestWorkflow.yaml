@@ -74,11 +74,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Rodar testes dentro do Docker Compose
-        env:
-          DATASOURCE_DB: ${{ secrets.DATASOURCE_DB }}
-          DATASOURCE_USERNAME: ${{ secrets.DATASOURCE_USER }}
-          DATASOURCE_PASSWORD: ${{ secrets.DATASOURCE_PASSWORD }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+      - name: Criar arquivo .env com secrets
+        run: |
+          echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" >> .env
+          echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> .env
+          echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
+
+      - name: Rodar testes dentro do Docker Compose        
         run: docker compose up --build --abort-on-container-exit --exit-code-from app
