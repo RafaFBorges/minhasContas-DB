@@ -25,6 +25,9 @@ jobs:
       - name: Compile o projeto (sem testes)
         run: mvn -B clean compile
 
+      - name: Build do Docker com Docker Compose
+        run: docker-compose build
+
   test:
     runs-on: ubuntu-latest
     needs: build
