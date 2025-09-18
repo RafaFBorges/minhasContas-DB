@@ -86,4 +86,4 @@ jobs:
           EOF
 
       - name: Rodar testes dentro do Docker Compose        
-        run: docker compose --env-file .env up --build --abort-on-container-exit --exit-code-from app
+        run: docker compose --env-file .env up --build --abort-on-container-exit --exit-code-from test test

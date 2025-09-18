@@ -10,6 +10,19 @@ services:
     env_file:
       - .env
 
+  test:
+    image: maven:3.9-eclipse-temurin-17
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - .env
+    command: mvn test
+    working_dir: /app
+
   db:
     image: postgres:15
     restart: always
