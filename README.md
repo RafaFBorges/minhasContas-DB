@@ -66,14 +66,14 @@ A feature base deste programa é a manipulção de dados para um controle de gas
   
   - Docker
     1. Buildar a imagem a partir do root do projeto
-    ```
-    docker build -t minhascontas .
-    ```
+```
+docker build -t minhascontas .
+```
 
     2. Rodar o docker mapeando uma porta do computador para a porta 8080
-    ```
-    docker run -p 8080:8080 minhascontas
-    ```
+```
+docker run -p 8080:8080 minhascontas
+```
 
     3. Acessar os endpoints na porta 8080
   
@@ -81,22 +81,22 @@ A feature base deste programa é a manipulção de dados para um controle de gas
   
   - Local
     1. Execute no terminal o código
-    ```
-    mvn test
-    ```
+```
+mvn test
+```
 
   - Docker
     1. Execute no terminal o código
-    ```
-    docker-compose up --build test
-    ```
+```
+docker-compose up --build test
+```
 
 - Deploy
 
   Deploy da aplicação é feito na plataforma Render. O deploy é separado em um server e um banco de dados SQL. Links para acesso são são:
 
   - Dashboard do projeto: https://dashboard.render.com/project/prj-d351ucp5pdvs73bc9s20
-  - Link do Projeto: phttps://minhascontas-server.onrender.com/ 
+  - Link do Projeto: https://minhascontas-server.onrender.com/ 
 
 <!-- Tecnologias -->
 <div id="tecnologias-utilizadas"/>
