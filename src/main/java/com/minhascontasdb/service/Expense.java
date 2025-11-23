@@ -19,6 +19,7 @@ public class Expense {
   private Long id;
   private double value;
   private List<Instant> date;
+  private String category;
 
   public Expense() {
     this.date = new ArrayList<>();
@@ -28,6 +29,7 @@ public class Expense {
     this.date = new ArrayList<>();
     this.value = value;
     this.date.add(date);
+    this.category = "Default Category";
   }
 
   public Expense(Long id, Double value, Instant date) {
@@ -36,7 +38,7 @@ public class Expense {
   }
 
   public Long getId() {
-    return id;
+    return this.id;
   }
 
   public void setId(Long id) {
@@ -44,7 +46,11 @@ public class Expense {
   }
 
   public double getValue() {
-    return value;
+    return this.value;
+  }
+
+  public String getCategory() {
+    return this.category;
   }
 
   public void setValue(double value, Instant date) {
