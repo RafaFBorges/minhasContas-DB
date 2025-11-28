@@ -4,11 +4,14 @@ import java.util.List;
 import java.util.Optional;
 
 import com.minhascontasdb.dto.CategoryRequestDTO;
+import com.minhascontasdb.dto.Errors.ErrorResponseDTO;
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
 import com.minhascontasdb.persistence.CategoryPersistence;
 import com.minhascontasdb.service.Category;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -29,9 +32,20 @@ public class CategoryController {
   private CategoryPersistence categoryPersistence;
 
   @GetMapping
-  public ResponseEntity<List<Category>> getCategory() {
-    List<Category> allCategories = categoryPersistence.findAll();
-    return ResponseEntity.ok(allCategories);
+  public ResponseEntity<?> getCategory() {
+    try {
+      List<Category> allCategories = categoryPersistence.findAll();
+
+      return ResponseEntity.ok(allCategories);
+    } catch (InvalidDataAccessResourceUsageException e) {
+      return ResponseEntity
+          .status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body(new InvalidArgumentsError("A column was not found").getResponse());
+    } catch (Exception e) {
+      return ResponseEntity
+          .status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body(new ErrorResponseDTO("Error=" + e.getMessage()));
+    }
   }
 
   @GetMapping("/{id}")
@@ -45,29 +59,38 @@ public class CategoryController {
   }
 
   @PostMapping
-  public ResponseEntity<Category> createCategory(@RequestBody CategoryRequestDTO dto) {
-    Category newCategory = new Category(dto.getName());
+  public ResponseEntity<?> createCategory(@RequestBody CategoryRequestDTO dto) {
+    try {
+      Category newCategory = new Category(dto.getName(), dto.getOwner());
 
-    Category savedCategory = categoryPersistence.save(newCategory);
-
-    return ResponseEntity.ok(savedCategory);
+      Category savedCategory = categoryPersistence.save(newCategory);
+      return ResponseEntity.ok(savedCategory);
+    } catch (InvalidArgumentsError error) {
+      return ResponseEntity.badRequest().body(error.getResponse());
+    } catch (InvalidDataAccessResourceUsageException error) {
+      return ResponseEntity.badRequest().body(error);
+    }
   }
 
   @PutMapping("/{id}")
   public ResponseEntity<?> updateCategory(@PathVariable Long id, @RequestBody CategoryRequestDTO dto) {
-    if (dto.getName() == null)
-      return ResponseEntity.badRequest().body(new InvalidArgumentsError());
+    try {
+      if (dto.getName() == null)
+        return ResponseEntity.badRequest().body(new InvalidArgumentsError().getResponse());
 
-    Optional<Category> existingCategory = categoryPersistence.findById(id);
+      Optional<Category> existingCategory = categoryPersistence.findById(id);
 
-    if (!existingCategory.isPresent())
-      return ResponseEntity.notFound().build();
+      if (!existingCategory.isPresent())
+        return ResponseEntity.notFound().build();
 
-    Category categoryToUpdate = existingCategory.get();
-    categoryToUpdate.setName(dto.getName());
+      Category categoryToUpdate = existingCategory.get();
+      categoryToUpdate.setName(dto.getName());
 
-    Category updatedCategory = categoryPersistence.save(categoryToUpdate);
-    return ResponseEntity.ok(updatedCategory);
+      Category updatedCategory = categoryPersistence.save(categoryToUpdate);
+      return ResponseEntity.ok(updatedCategory);
+    } catch (InvalidArgumentsError error) {
+      return ResponseEntity.badRequest().body(error.getResponse());
+    }
   }
 
   @DeleteMapping("/{id}")
