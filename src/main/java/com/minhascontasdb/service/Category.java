@@ -8,11 +8,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
 
 @Entity
-@Table(name = "categories")
+@Table(name = "categories", uniqueConstraints = {
+    @UniqueConstraint(name = "UC_CATEGORY_NAME_OWNER", columnNames = { "name", "owner" })
+})
 public class Category {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

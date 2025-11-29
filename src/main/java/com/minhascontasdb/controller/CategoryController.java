@@ -10,6 +10,7 @@ import com.minhascontasdb.persistence.CategoryPersistence;
 import com.minhascontasdb.service.Category;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -69,6 +70,8 @@ public class CategoryController {
       return ResponseEntity.badRequest().body(error.getResponse());
     } catch (InvalidDataAccessResourceUsageException error) {
       return ResponseEntity.badRequest().body(error);
+    } catch (DataIntegrityViolationException error) {
+      return ResponseEntity.badRequest().body(new InvalidArgumentsError(error.getMessage()).getResponse());
     }
   }
 

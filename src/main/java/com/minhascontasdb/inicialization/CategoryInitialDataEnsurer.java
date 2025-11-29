@@ -25,24 +25,24 @@ public class CategoryInitialDataEnsurer implements CommandLineRunner {
       new Category("Moradia", (long) 0));
 
   @Override
-  @Transactional // Garante que a operação ocorra em uma transação
+  @Transactional
   public void run(String... args) throws Exception {
-    System.out.println("✅ Verificando dados iniciais no banco de dados...");
+    System.out.println("Category Inicialization BEGIN");
     ensureRequiredCategoriesExist();
   }
 
   private void ensureRequiredCategoriesExist() {
     for (Category requiredCategory : REQUIRED_CATEGORIES) {
 
-      // 1. Verifica se a categoria já existe (ex: pelo nome)
-      Optional<Category> existingCategory = repository.findByName(requiredCategory.getName());
+      Optional<Category> existingCategory = repository.findByNameAndOwner(requiredCategory.getName(),
+          requiredCategory.getOwner());
 
       if (existingCategory.isEmpty()) {
-
-        // 2. Se não existe, salva o novo objeto
         repository.save(requiredCategory);
-        System.out.println("✨ Inserido: Categoria '" + requiredCategory.getName() + "'");
+        System.out.println("- Category inserted > '" + requiredCategory.getName() + "'");
       }
     }
+
+    System.out.println("Category Inicialization END");
   }
 }
