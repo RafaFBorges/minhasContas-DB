@@ -39,11 +39,10 @@ public class ExpensesController {
   @GetMapping("/{id}")
   public ResponseEntity<Expense> getExpenseById(@PathVariable Long id) {
     Optional<Expense> expense = expensePersistence.findById(id);
-
-    if (expense.isPresent())
-      return ResponseEntity.ok(expense.get());
-    else
+    if (!expense.isPresent())
       return ResponseEntity.notFound().build();
+
+    return ResponseEntity.ok(expense.get());
   }
 
   @PostMapping

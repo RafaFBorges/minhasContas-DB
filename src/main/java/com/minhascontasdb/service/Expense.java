@@ -4,10 +4,14 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 
 @Entity
@@ -19,22 +23,37 @@ public class Expense {
   private Long id;
   private double value;
   private List<Instant> date;
-  private String category;
+
+  @Column(name = "owner")
+  private Long owner;
+
+  @ManyToMany
+  @JoinTable(name = "expense_category", joinColumns = @JoinColumn(name = "expense_id"), inverseJoinColumns = @JoinColumn(name = "category_id"))
+  private List<Category> categories;
 
   public Expense() {
     this.date = new ArrayList<>();
+    this.categories = new ArrayList<>();
+    this.owner = (long) -1;
   }
 
   public Expense(double value, Instant date) {
     this.date = new ArrayList<>();
+    this.categories = new ArrayList<>();
     this.value = value;
     this.date.add(date);
-    this.category = "Default Category";
+    this.owner = (long) -1;
   }
 
   public Expense(Long id, Double value, Instant date) {
     this(value, date);
     this.id = id;
+    this.owner = (long) -1;
+  }
+
+  public Expense(Long id, Double value, Instant date, Long owner) {
+    this(id, value, date);
+    this.owner = owner;
   }
 
   public Long getId() {
@@ -49,8 +68,16 @@ public class Expense {
     return this.value;
   }
 
-  public String getCategory() {
-    return this.category;
+  public Long getOwner() {
+    return this.owner;
+  }
+
+  public List<Category> getCategories() {
+    return this.categories;
+  }
+
+  public void setCategories(List<Category> newList) {
+    this.categories = newList;
   }
 
   public void setValue(double value, Instant date) {
