@@ -6,7 +6,9 @@ import java.util.Optional;
 
 import com.minhascontasdb.dto.ExpenseRequestDTO;
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
+import com.minhascontasdb.persistence.CategoryPersistence;
 import com.minhascontasdb.persistence.ExpensePersistence;
+import com.minhascontasdb.service.Category;
 import com.minhascontasdb.service.Expense;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +31,9 @@ public class ExpensesController {
   @Autowired
   private ExpensePersistence expensePersistence;
 
+  @Autowired
+  private CategoryPersistence categoryRepository;
+
   @GetMapping
   public ResponseEntity<List<Expense>> getExpense() {
 
@@ -48,6 +53,11 @@ public class ExpensesController {
   @PostMapping
   public ResponseEntity<Expense> createExpense(@RequestBody ExpenseRequestDTO dto) {
     Expense newExpense = new Expense(dto.getValue(), dto.getDate());
+
+    if (dto.getCategoryIds() != null) {
+      List<Category> categories = categoryRepository.findAllById(dto.getCategoryIds());
+      newExpense.setCategories(categories);
+    }
 
     Expense savedExpense = expensePersistence.save(newExpense);
 
@@ -69,6 +79,11 @@ public class ExpensesController {
 
     Expense expenseToUpdate = existingExpense.get();
     expenseToUpdate.setValue(dto.getValue(), dto.getDate());
+
+    if (dto.getCategoryIds() != null) {
+      List<Category> categories = categoryRepository.findAllById(dto.getCategoryIds());
+      expenseToUpdate.setCategories(categories);
+    }
 
     Expense updatedExpense = expensePersistence.save(expenseToUpdate);
     return ResponseEntity.ok(updatedExpense);
