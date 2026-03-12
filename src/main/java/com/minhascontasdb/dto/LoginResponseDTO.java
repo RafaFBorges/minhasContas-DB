@@ -7,9 +7,9 @@ public class LoginResponseDTO {
   private String token;
   private LocalDateTime expireTime;
 
-  public LoginResponseDTO(String token) {
+  public LoginResponseDTO(String token, LocalDateTime expireTime) {
     this.token = token;
-    this.expireTime = LocalDateTime.now().plusHours(1);
+    this.expireTime = expireTime;
   }
 
   public String getToken() {
