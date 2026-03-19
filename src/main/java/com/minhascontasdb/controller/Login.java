@@ -41,8 +41,14 @@ public class Login {
         user.getPassword().equals(loginData.getPassword())) {
       UserSession record = UserSession.create();
       Login.userSessions.put(loginData.getUser(), record);
-
-      return ResponseEntity.ok(new LoginResponseDTO(record.token(), record.expiresAt()));
+          
+      return ResponseEntity
+          .ok(new LoginResponseDTO(
+              record.token(),
+              record.expiresAt(),
+              user.getId(),
+              user.getUser(),
+              user.getName()));
     }
 
     return ResponseEntity.status(401).build();
