@@ -30,7 +30,13 @@ public class Login {
 
     if (userSession != null) {
       if (!userSession.isExpired())
-        return ResponseEntity.ok(new LoginResponseDTO(userSession.token(), userSession.expiresAt()));
+        return ResponseEntity.ok(
+            new LoginResponseDTO(
+                userSession.token(),
+                userSession.expiresAt(),
+                userSession.id(),
+                userSession.user(),
+                userSession.name()));
 
       userSessions.remove(loginData.getUser());
     }
@@ -39,9 +45,9 @@ public class Login {
     if (user != null &&
         user.getUser().equals(loginData.getUser()) &&
         user.getPassword().equals(loginData.getPassword())) {
-      UserSession record = UserSession.create();
+      UserSession record = UserSession.create(user.getId(), user.getUser(), user.getName());
       Login.userSessions.put(loginData.getUser(), record);
-          
+
       return ResponseEntity
           .ok(new LoginResponseDTO(
               record.token(),
