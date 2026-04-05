@@ -12,7 +12,7 @@ public interface CategoryPersistence extends JpaRepository<Category, Long> {
 
   Optional<Category> findByName(String name);
 
-  Optional<Category> findByNameAndOwner(String name, Long owner);
+  Optional<Category> findByNameAndOwner_Id(String name, Long owner);
 
-  List<Category> findByOwner(Long owner);
+  List<Category> findByOwner_id(Long owner);
 }

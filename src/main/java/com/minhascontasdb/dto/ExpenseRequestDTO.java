@@ -7,6 +7,7 @@ public class ExpenseRequestDTO {
 
   private double value;
   private Instant date;
+  private Long owner;
   private List<Long> categoryIds;
 
   public ExpenseRequestDTO() {
@@ -33,6 +34,14 @@ public class ExpenseRequestDTO {
 
   public void setDate(Instant date) {
     this.date = date;
+  }
+
+  public Long getOwner() {
+    return owner;
+  }
+
+  public void setOwner(Long owner) {
+    this.owner = owner;
   }
 
   public Boolean isValidValue() {

@@ -2,11 +2,12 @@ package com.minhascontasdb.service;
 
 import java.time.Instant;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
@@ -23,44 +24,41 @@ public class Category {
   private String name;
   private Instant date;
 
-  @Column(name = "owner")
-  private Long owner;
+  @ManyToOne
+  @JoinColumn(name = "owner")
+  private User owner;
 
   public Category() {
     this.name = "";
     this.date = null;
-    this.id = (long) -1;
-    this.owner = (long) -1;
+    this.id = -1L;
+    this.owner = null;
   }
 
   public Category(String name, Instant date) {
     this.name = name;
     this.date = date;
-    this.id = (long) -1;
-    this.owner = (long) -1;
+    this.id = -1L;
+    this.owner = null;
   }
 
-  public Category(String name, Instant date, Long owner) {
+  public Category(String name, Instant date, User owner) {
     this(name, date);
     this.owner = owner;
     String strMessage = "";
 
-    if (this.owner == null)
-      strMessage = "Owner is null";
-    else if (this.owner == -1)
-      strMessage = "Invalid owner value";
-    else if (this.name == "")
+    if (this.name == null || this.name.isEmpty())
       strMessage = "invalid name value";
 
     if (strMessage != "")
       throw new InvalidArgumentsError(strMessage);
   }
 
-  public Category(String name, Long owner) {
+  public Category(String name, User owner) {
     this(name, Instant.now(), owner);
   }
 
-  public Category(Long id, String name, Instant date, Long owner) {
+  public Category(Long id, String name, Instant date, User owner) {
     this(name, date, owner);
     this.id = id;
 
@@ -84,7 +82,7 @@ public class Category {
     return this.date;
   }
 
-  public Long getOwner() {
+  public User getOwner() {
     return this.owner;
   }
 
@@ -92,7 +90,7 @@ public class Category {
     this.name = name;
   }
 
-  public void setOwner(Long owner) {
+  public void setOwner(User owner) {
     this.owner = owner;
   }
 }

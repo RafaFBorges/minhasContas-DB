@@ -8,8 +8,10 @@ import com.minhascontasdb.dto.ExpenseRequestDTO;
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
 import com.minhascontasdb.persistence.CategoryPersistence;
 import com.minhascontasdb.persistence.ExpensePersistence;
+import com.minhascontasdb.persistence.UserPersistence;
 import com.minhascontasdb.service.Category;
 import com.minhascontasdb.service.Expense;
+import com.minhascontasdb.service.User;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -34,11 +36,13 @@ public class ExpensesController {
   @Autowired
   private CategoryPersistence categoryRepository;
 
-  @GetMapping
-  public ResponseEntity<List<Expense>> getExpense() {
+  @Autowired
+  private UserPersistence userPersistence;
 
-    List<Expense> allExpenses = expensePersistence.findAll();
-    return ResponseEntity.ok(allExpenses);
+  @GetMapping("/user/{id}")
+  public ResponseEntity<List<Expense>> getExpense(@PathVariable Long id) {
+    List<Expense> userExpenses = expensePersistence.findByOwner_id(id);
+    return ResponseEntity.ok(userExpenses);
   }
 
   @GetMapping("/{id}")
@@ -53,6 +57,11 @@ public class ExpensesController {
   @PostMapping
   public ResponseEntity<Expense> createExpense(@RequestBody ExpenseRequestDTO dto) {
     Expense newExpense = new Expense(dto.getValue(), dto.getDate());
+
+    if (dto.getOwner() != null) {
+      User owner = userPersistence.findById(dto.getOwner()).orElse(null);
+      newExpense.setOwner(owner);
+    }
 
     if (dto.getCategoryIds() != null) {
       List<Category> categories = categoryRepository.findAllById(dto.getCategoryIds());

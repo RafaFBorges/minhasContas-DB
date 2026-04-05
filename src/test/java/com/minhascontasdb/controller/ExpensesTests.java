@@ -9,6 +9,8 @@ import java.util.List;
 
 import com.minhascontasdb.dto.ExpenseRequestDTO;
 import com.minhascontasdb.persistence.ExpensePersistence;
+import com.minhascontasdb.persistence.UserPersistence;
+import com.minhascontasdb.service.User;
 import com.minhascontasdb.service.Expense;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,6 +59,10 @@ public class ExpensesTests {
   @Autowired
   private ExpensePersistence expensePersistence;
 
+  @Autowired
+  private UserPersistence userPersistence;
+  private User testUser;
+
   @Container
   @ServiceConnection
   static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:latest");
@@ -69,6 +75,7 @@ public class ExpensesTests {
   @AfterEach
   void teardown() {
     expensePersistence.deleteAll();
+    userPersistence.deleteAll();
   }
 
   @Nested
@@ -77,7 +84,10 @@ public class ExpensesTests {
 
     @BeforeEach
     void setup() {
-      this.savedExpense = expensePersistence.save(new Expense(DEFAULT_VALUE, FIXED_INSTANT));
+      testUser = userPersistence.save(new User("Test User", "test@test.com", "password", "testuser"));
+      Expense expense = new Expense(DEFAULT_VALUE, FIXED_INSTANT);
+      expense.setOwner(testUser);
+      this.savedExpense = expensePersistence.save(expense);
     }
 
     // Teste para o endpoint GET /expense/{id}
@@ -93,7 +103,7 @@ public class ExpensesTests {
     // Teste para o endpoint GET /expense
     @Test
     void getExpense_ShouldReturnAllExpenses() throws Exception {
-      mockMvc.perform(get("/expense"))
+      mockMvc.perform(get("/expense/user/{id}", testUser.getId()))
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$", hasSize(1)))
@@ -105,6 +115,7 @@ public class ExpensesTests {
     @Test
     void createExpense_ShouldReturnCreatedExpense() throws Exception {
       ExpenseRequestDTO requestDTO = new ExpenseRequestDTO(DEFAULT_VALUE, Instant.now());
+      requestDTO.setOwner(testUser.getId());
 
       String requestJson = objectMapper.writeValueAsString(requestDTO);
 

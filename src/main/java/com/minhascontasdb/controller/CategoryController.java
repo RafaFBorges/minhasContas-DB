@@ -7,7 +7,9 @@ import com.minhascontasdb.dto.CategoryRequestDTO;
 import com.minhascontasdb.dto.Errors.ErrorResponseDTO;
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
 import com.minhascontasdb.persistence.CategoryPersistence;
+import com.minhascontasdb.persistence.UserPersistence;
 import com.minhascontasdb.service.Category;
+import com.minhascontasdb.service.User;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -32,10 +34,17 @@ public class CategoryController {
   @Autowired
   private CategoryPersistence categoryPersistence;
 
-  @GetMapping
-  public ResponseEntity<?> getCategory() {
+  @Autowired
+  private UserPersistence userPersistence;
+
+  @GetMapping("/user/{id}")
+  public ResponseEntity<?> getCategory(@PathVariable Long id) {
     try {
-      List<Category> allCategories = categoryPersistence.findAll();
+      User owner = userPersistence.findById(id).orElse(null);
+      if (owner == null)
+        return ResponseEntity.notFound().build();
+
+      List<Category> allCategories = categoryPersistence.findByOwner_id(id);
 
       return ResponseEntity.ok(allCategories);
     } catch (InvalidDataAccessResourceUsageException e) {
@@ -62,7 +71,10 @@ public class CategoryController {
   @PostMapping
   public ResponseEntity<?> createCategory(@RequestBody CategoryRequestDTO dto) {
     try {
-      Category newCategory = new Category(dto.getName(), dto.getOwner());
+      User owner = userPersistence.findById(dto.getOwner())
+          .orElseThrow(() -> new InvalidArgumentsError("Owner user not found"));
+
+      Category newCategory = new Category(dto.getName(), owner);
 
       Category savedCategory = categoryPersistence.save(newCategory);
       return ResponseEntity.ok(savedCategory);
