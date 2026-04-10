@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.minhascontasdb.dto.CategoryRequestDTO;
+import com.minhascontasdb.dto.CategoryResponseDTO;
 import com.minhascontasdb.dto.Errors.ErrorResponseDTO;
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
 import com.minhascontasdb.persistence.CategoryPersistence;
@@ -40,11 +41,10 @@ public class CategoryController {
   @GetMapping("/user/{id}")
   public ResponseEntity<?> getCategory(@PathVariable Long id) {
     try {
-      User owner = userPersistence.findById(id).orElse(null);
-      if (owner == null)
+      if (!userPersistence.existsById(id))
         return ResponseEntity.notFound().build();
 
-      List<Category> allCategories = categoryPersistence.findByOwner_id(id);
+      List<CategoryResponseDTO> allCategories = categoryPersistence.findCategoryDTOsByOwnerId(id);
 
       return ResponseEntity.ok(allCategories);
     } catch (InvalidDataAccessResourceUsageException e) {

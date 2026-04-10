@@ -3,6 +3,8 @@ package com.minhascontasdb.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -26,9 +28,11 @@ public class User {
   private String user;
 
   @OneToMany(mappedBy = "owner")
+  @JsonIgnore
   private List<Expense> expenses;
 
   @OneToMany(mappedBy = "owner")
+  @JsonIgnore
   private List<Category> categories;
 
   public User() {

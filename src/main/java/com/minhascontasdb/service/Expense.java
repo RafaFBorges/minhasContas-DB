@@ -22,7 +22,7 @@ public class Expense {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
   private double value;
-  private List<Instant> date;
+  private Instant date;
 
   @ManyToOne
   @JoinColumn(name = "owner")
@@ -33,16 +33,15 @@ public class Expense {
   private List<Category> categories;
 
   public Expense() {
-    this.date = new ArrayList<>();
+    this.date = Instant.now();
     this.categories = new ArrayList<>();
     this.owner = null;
   }
 
   public Expense(double value, Instant date) {
-    this.date = new ArrayList<>();
+    this.date = date;
     this.categories = new ArrayList<>();
     this.value = value;
-    this.date.add(date);
     this.owner = null;
   }
 
@@ -86,20 +85,16 @@ public class Expense {
   }
 
   public void setValue(double value, Instant date) {
+    this.date = date;
     this.value = value;
-    this.date.add(date);
   }
 
   public void setValue(double value) {
+    this.date = Instant.now();
     this.value = value;
-    this.date.add(Instant.now());
   }
 
   public Instant getLastDate() {
-    return this.date.get(this.date.size() - 1);
-  }
-
-  public List<Instant> getDates() {
     return this.date;
   }
 }

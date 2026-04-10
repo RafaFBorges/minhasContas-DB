@@ -5,6 +5,7 @@ import java.util.List;
 
 public class ExpenseRequestDTO {
 
+  private Long id;
   private double value;
   private Instant date;
   private Long owner;
@@ -21,7 +22,7 @@ public class ExpenseRequestDTO {
   }
 
   public double getValue() {
-    return value;
+    return this.value;
   }
 
   public void setValue(double value) {
@@ -29,7 +30,7 @@ public class ExpenseRequestDTO {
   }
 
   public Instant getDate() {
-    return date;
+    return this.date;
   }
 
   public void setDate(Instant date) {
@@ -37,11 +38,19 @@ public class ExpenseRequestDTO {
   }
 
   public Long getOwner() {
-    return owner;
+    return this.owner;
+  }
+
+  public Long getId() {
+    return this.id;
   }
 
   public void setOwner(Long owner) {
     this.owner = owner;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
   }
 
   public Boolean isValidValue() {
@@ -49,10 +58,18 @@ public class ExpenseRequestDTO {
   }
 
   public List<Long> getCategoryIds() {
-    return categoryIds;
+    return this.categoryIds;
   }
 
   public void setCategoryIds(List<Long> categoryIds) {
     this.categoryIds = categoryIds;
+  }
+
+  public boolean isValidDate() {
+    return this.date != null;
+  }
+
+  public boolean isValidOwner() {
+    return this.owner != null && 0 < this.owner;
   }
 }
