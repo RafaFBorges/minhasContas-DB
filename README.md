@@ -1,17 +1,18 @@
 <!-- Título -->
-<h1 align="center"> MinhasContas-DB </h1>
+<h1 align="center"> Minhas Contas - Backend </h1>
 
-<!-- Badges -->
+<h6 align="right">editado pela última vez: 15/04/2026</h6>
 
 *******
 ### Índice 
 
 * [Descrição do Projeto](#descrição-do-projeto)
-* [Status do Projeto](#status-do-Projeto)
-* [Desenvolvedores do Projeto](#pessoas-desenvolvedoras)
+* [Status do Projeto](#status-do-projeto)
+* [Pessoas Desenvolvedoras](#pessoas-desenvolvedoras)
 * [Funcionalidades e Demonstração da Aplicação](#funcionalidades-e-demonstração-da-aplicação)
 * [Modo de uso](#modo-de-uso)
 * [Tecnologias utilizadas](#tecnologias-utilizadas)
+* [Arquitetura](#arquitetura)
 *******
 
 <!-- Descrição -->
@@ -20,93 +21,144 @@
 <div id="descrição-do-projeto"/>
 <h3> Descrição </h3>
 
-Aplicativo mobile reconhecer as figurinhas faltantes do álbum de figurinhas da copa de 2022.
+Minhas Contas Backend é uma API REST construída em Java com Spring Boot para gerenciamento de finanças pessoais. A aplicação fornece endpoints de autenticação, criação e gerenciamento de despesas, organização por categorias para apoiar o controle financeiro do usuário.
 
-<div id="status-do-Projeto"/>
+<div id="status-do-projeto"/>
 
 > Status do Projeto: :construction: Projeto em construção :construction:
+  - Criação *v0.0.1*: 15/04/2026
 
 <div id="pessoas-desenvolvedoras"/>
 <h3> Desenvolvedores </h3>
 
-| [<img src="https://github.com/RafaFBorges.png" alt="foto Rafael Fernandes Borges"  width="128px" height="128px"/><br><sub>Rafael Fernandes Borges</sub>](https://github.com/RafaFBorges)
+| [<img src="https://github.com/RafaFBorges.png" alt="foto do desenvolvedor" width="128px" height="128px"/><br><sub>Equipe Minhas Contas</sub>](https://github.com/RafaFBorges)
 | :---: |
 
 <!-- Funcionalidades e Demonstração da Aplicação -->
 <div id="funcionalidades-e-demonstração-da-aplicação"/>
 <h2> :hammer: Funcionalidades e Demonstração da Aplicação: </h2>
 
-A feature base deste programa é a manipulção de dados para um controle de gastos, ainda em construção na versão *v0.0.1*.
+Minhas Contas Web Backend *v0.0.1*.
+  - Login com autenticação via endpoints protegidos.
+  - CRUD completo de despesas com categorias.
+  - CRUD de categorias para organização de despesas.
+  - Autenticação e autorização segura.
+  - Estrutura modular com Controllers, Services e DTOs.
+  - Suporte a Docker para containerização.
+  - Testes automatizados com JUnit.
 
 ### Releases:
 
 - *v0.0.1*
   * :construction: Em construção :construction:
-  * CRUD de despesas
-  * Dockerização do projeto da deploy
 
 <!-- Primeiro acesso -->
 <div id="modo-de-uso" />
 
 ### Modo de uso:
 
-- Passos para começar no projeto:
-  *Obs.:* busque os passos atuais para instalação no chatGPT
+- Passos para instalar as tecnologias necessárias:
 
-  1. Baixe e instale o Java JDK 17
-  2. Baixe e instale o Maven
-  3. Baixe e instale o Docker Desktop
-  4. Baixe e instale o Postgress
+  1. Instale Java JDK 17 neste [link](https://www.oracle.com/java/technologies/downloads/#java17)
+  2. Instale Maven neste [link](https://maven.apache.org/download.cgi)
+  3. Instale Docker neste [link](https://www.docker.com/products/docker-desktop)
+  4. Instale PostgreSQL neste [link](https://www.postgresql.org/download/)
 
-- Executar o projeto:
-  
-  - Local
-    1. Clique com o botão direito do mouse em uma classe
-    2. Clique em *Run Java*
-  
-  - Docker
-    1. Buildar a imagem a partir do root do projeto
+- Construindo dependências do projeto (no root):
 
-    ```
-    docker build -t minhascontas .
-    ```
+```bash
+mvn clean install
+```
 
-    2. Rodar o docker mapeando uma porta do computador para a porta 8080
+- Opções para rodar a aplicação:
 
-    ```
-    docker run -p 8080:8080 minhascontas
+  1. Dev: inicia a aplicação em modo de desenvolvimento (IDE ou Maven wrapper).
+
+    ```bash
+    ./mvnw spring-boot:run
     ```
 
-    3. Acessar os endpoints na porta 8080
-  
-- Execute os teste:
-  
-  - Local
-    1. Execute no terminal o código
+  2. Build: gera o build de produção.
 
+    ```bash
+    mvn clean package
     ```
+
+  3. Testes: executa os testes unitários.
+
+    ```bash
     mvn test
     ```
 
-  - Docker
-    1. Execute no terminal o código
+  4. Docker: constrói e executa a aplicação em contêiner.
 
+    ```bash
+    docker build -t minhascontas-backend .
+    docker run -p 8080:8080 minhascontas-backend
     ```
-    docker-compose up --build test
+
+  5. Docker Compose: inicia a aplicação com banco de dados.
+
+    ```bash
+    docker-compose up --build
     ```
 
-- Deploy
+- A aplicação será acessível em:
 
-  Deploy da aplicação é feito na plataforma Render. O deploy é separado em um server e um banco de dados SQL. Links para acesso são são:
-
-  - Dashboard do projeto: https://dashboard.render.com/project/prj-d351ucp5pdvs73bc9s20
-  - Link do Projeto: https://minhascontas-server.onrender.com/ 
+```bash
+http://localhost:8080
+```
 
 <!-- Tecnologias -->
 <div id="tecnologias-utilizadas"/>
-<h2> Tecnologias: </h2>
+<h2> Stack de tecnologias: </h2>
 
-- Java
+- Java 17
+- Spring Boot
+- Spring Data JPA
+- Spring Security
 - Maven
-- Postgress
+- PostgreSQL
 - Docker
+- JUnit
+- Lombok
+
+<!-- Arquitetura -->
+<div id="arquitetura"/>
+<h2> Arquitetura: </h2>
+
+<div id="arquitetura-servicos"/>
+<h3> Estrutura de Serviços </h3>
+
+  - Back-end REST API: API REST para login, autenticação, gerenciamento de despesas, categorias e tags.
+  - Banco de dados PostgreSQL: persistência de dados de usuários, despesas e categorias.
+
+<div id="arquitetura-pastas"/>
+<h3> Arquitetura de Pastas </h3>
+
+  - root
+    - `src/main/java/com/minhascontasdb`
+      - `controller` : endpoints REST da aplicação.
+      - `service` : lógica de negócios.
+      - `persistence` : camada de acesso aos dados.
+      - `dto` : objetos de transferência de dados (requisição/resposta).
+      - `filter` : filtros de requisição HTTP.
+      - `inicialization` : garantia de dados iniciais.
+    - `src/main/resources`
+      - `application.properties` : configurações da aplicação.
+      - `static` : recursos estáticos.
+      - `templates` : templates HTML.
+    - `src/test` : testes unitários e de integração.
+
+<div id="arquitetura-variaveis"/>
+<h3> Variáveis de ambiente </h3>
+
+  Configure as seguintes variáveis em `application.properties`:
+
+  - `spring.datasource.url` : URL de conexão com o banco de dados PostgreSQL.
+  - `spring.datasource.username` : usuário do banco de dados.
+  - `spring.datasource.password` : senha do banco de dados.
+  - `server.port` : porta da aplicação (padrão: 8080).
+
+  - Dashboard do projeto: https://dashboard.render.com/project/prj-d351ucp5pdvs73bc9s20
+  - Link do Projeto: https://minhascontas-server.onrender.com/
