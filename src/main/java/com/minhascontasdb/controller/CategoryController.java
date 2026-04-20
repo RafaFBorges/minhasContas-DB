@@ -6,9 +6,11 @@ import java.util.Optional;
 import com.minhascontasdb.dto.CategoryRequestDTO;
 import com.minhascontasdb.dto.CategoryResponseDTO;
 import com.minhascontasdb.dto.Errors.ErrorResponseDTO;
+import com.minhascontasdb.dto.Errors.InvalidAccessError;
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
 import com.minhascontasdb.persistence.CategoryPersistence;
 import com.minhascontasdb.persistence.UserPersistence;
+import org.springframework.web.bind.annotation.RequestHeader;
 import com.minhascontasdb.service.Category;
 import com.minhascontasdb.service.User;
 
@@ -38,8 +40,15 @@ public class CategoryController {
   @Autowired
   private UserPersistence userPersistence;
 
+  @org.springframework.web.bind.annotation.ExceptionHandler(InvalidAccessError.class)
+  public ResponseEntity<ErrorResponseDTO> handleInvalidAccess(InvalidAccessError error) {
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error.getResponse());
+  }
+
   @GetMapping("/user/{id}")
-  public ResponseEntity<?> getCategory(@PathVariable Long id) {
+  public ResponseEntity<?> getCategory(@PathVariable Long id, @RequestHeader("token") String token) {
+    Login.validateToken(token);
+
     try {
       if (!userPersistence.existsById(id))
         return ResponseEntity.notFound().build();
@@ -59,7 +68,9 @@ public class CategoryController {
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<Category> getCategoryById(@PathVariable Long id) {
+  public ResponseEntity<Category> getCategoryById(@PathVariable Long id, @RequestHeader("token") String token) {
+    Login.validateToken(token);
+
     Optional<Category> category = categoryPersistence.findById(id);
 
     if (category.isPresent())
@@ -69,7 +80,9 @@ public class CategoryController {
   }
 
   @PostMapping
-  public ResponseEntity<?> createCategory(@RequestBody CategoryRequestDTO dto) {
+  public ResponseEntity<?> createCategory(@RequestBody CategoryRequestDTO dto, @RequestHeader("token") String token) {
+    Login.validateToken(token);
+
     try {
       User owner = userPersistence.findById(dto.getOwner())
           .orElseThrow(() -> new InvalidArgumentsError("Owner user not found"));
@@ -88,7 +101,9 @@ public class CategoryController {
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<?> updateCategory(@PathVariable Long id, @RequestBody CategoryRequestDTO dto) {
+  public ResponseEntity<?> updateCategory(@PathVariable Long id, @RequestBody CategoryRequestDTO dto, @RequestHeader("token") String token) {
+    Login.validateToken(token);
+
     try {
       if (dto.getName() == null)
         return ResponseEntity.badRequest().body(new InvalidArgumentsError().getResponse());
@@ -109,7 +124,9 @@ public class CategoryController {
   }
 
   @DeleteMapping("/{id}")
-  public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
+  public ResponseEntity<Void> deleteCategory(@PathVariable Long id, @RequestHeader("token") String token) {
+    Login.validateToken(token);
+
     if (!categoryPersistence.existsById(id))
       return ResponseEntity.notFound().build();
 

@@ -7,8 +7,10 @@ import java.util.Optional;
 import com.minhascontasdb.dto.ExpenseRequestDTO;
 import com.minhascontasdb.dto.ExpenseResponseDTO;
 import com.minhascontasdb.dto.Errors.ErrorResponseDTO;
+import com.minhascontasdb.dto.Errors.InvalidAccessError;
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
 import com.minhascontasdb.persistence.CategoryPersistence;
+import org.springframework.web.bind.annotation.RequestHeader;
 import com.minhascontasdb.persistence.ExpensePersistence;
 import com.minhascontasdb.persistence.UserPersistence;
 import com.minhascontasdb.service.Category;
@@ -43,8 +45,15 @@ public class ExpensesController {
   @Autowired
   private UserPersistence userPersistence;
 
+  @org.springframework.web.bind.annotation.ExceptionHandler(InvalidAccessError.class)
+  public ResponseEntity<ErrorResponseDTO> handleInvalidAccess(InvalidAccessError error) {
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error.getResponse());
+  }
+
   @GetMapping("/user/{id}")
-  public ResponseEntity<?> getExpense(@PathVariable Long id) {
+  public ResponseEntity<?> getExpense(@PathVariable Long id, @RequestHeader("token") String token) {
+    Login.validateToken(token);
+
     try {
       List<Expense> userExpenses = expensePersistence.findByOwnerIdWithDetails(id);
       List<ExpenseResponseDTO> response = userExpenses.stream()
@@ -64,7 +73,9 @@ public class ExpensesController {
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<?> getExpenseById(@PathVariable Long id) {
+  public ResponseEntity<?> getExpenseById(@PathVariable Long id, @RequestHeader("token") String token) {
+    Login.validateToken(token);
+
     Expense expense = expensePersistence.findById(id).orElse(null);
     if (expense != null)
       return ResponseEntity.notFound().build();
@@ -73,7 +84,9 @@ public class ExpensesController {
   }
 
   @PostMapping
-  public ResponseEntity<?> createExpense(@RequestBody ExpenseRequestDTO dto) {
+  public ResponseEntity<?> createExpense(@RequestBody ExpenseRequestDTO dto, @RequestHeader("token") String token) {
+    Login.validateToken(token);
+
     try {
       if (!dto.isValidOwner())
         throw new Exception("Invalid Owner");
@@ -120,7 +133,9 @@ public class ExpensesController {
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<?> updateExpense(@PathVariable Long id, @RequestBody ExpenseRequestDTO dto) {
+  public ResponseEntity<?> updateExpense(@PathVariable Long id, @RequestBody ExpenseRequestDTO dto, @RequestHeader("token") String token) {
+    Login.validateToken(token);
+
     if (!dto.isValidValue())
       return ResponseEntity.badRequest().body(new InvalidArgumentsError());
 
@@ -150,7 +165,9 @@ public class ExpensesController {
   }
 
   @DeleteMapping("/{id}")
-  public ResponseEntity<Void> deleteExpense(@PathVariable Long id) {
+  public ResponseEntity<Void> deleteExpense(@PathVariable Long id, @RequestHeader("token") String token) {
+    Login.validateToken(token);
+
     if (!expensePersistence.existsById(id))
       return ResponseEntity.notFound().build();
 
