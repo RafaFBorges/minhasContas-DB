@@ -6,8 +6,6 @@ import java.util.Optional;
 
 import com.minhascontasdb.dto.ExpenseRequestDTO;
 import com.minhascontasdb.dto.ExpenseResponseDTO;
-import com.minhascontasdb.dto.Errors.ErrorResponseDTO;
-import com.minhascontasdb.dto.Errors.InvalidAccessError;
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
 import com.minhascontasdb.persistence.CategoryPersistence;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -18,12 +16,9 @@ import com.minhascontasdb.service.Expense;
 import com.minhascontasdb.service.User;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.InvalidDataAccessResourceUsageException;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,33 +40,6 @@ public class ExpensesController {
 
   @Autowired
   private UserPersistence userPersistence;
-
-  @org.springframework.web.bind.annotation.ExceptionHandler(InvalidAccessError.class)
-  public ResponseEntity<ErrorResponseDTO> handleInvalidAccess(InvalidAccessError error) {
-    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error.getResponse());
-  }
-
-  @ExceptionHandler(InvalidArgumentsError.class)
-  public ResponseEntity<ErrorResponseDTO> handleInvalidArguments(InvalidArgumentsError e) {
-    return ResponseEntity
-        .status(HttpStatus.BAD_REQUEST)
-        .body(e.getResponse());
-  }
-
-  @ExceptionHandler(InvalidDataAccessResourceUsageException.class)
-  public ResponseEntity<ErrorResponseDTO> handleInvalidDataAccessResourceUsage(
-      InvalidDataAccessResourceUsageException e) {
-    return ResponseEntity
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .body(new InvalidArgumentsError("A column was not found").getResponse());
-  }
-
-  @ExceptionHandler(Exception.class)
-  public ResponseEntity<ErrorResponseDTO> handleGeneric(Exception e) {
-    return ResponseEntity
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .body(new ErrorResponseDTO("Error=" + e.getMessage()));
-  }
 
   @GetMapping("/user/{id}")
   public ResponseEntity<List<ExpenseResponseDTO>> getExpense(@PathVariable Long id,
