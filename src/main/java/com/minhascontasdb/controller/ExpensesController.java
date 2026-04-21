@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -50,26 +51,39 @@ public class ExpensesController {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error.getResponse());
   }
 
+  @ExceptionHandler(InvalidArgumentsError.class)
+  public ResponseEntity<ErrorResponseDTO> handleInvalidArguments(InvalidArgumentsError e) {
+    return ResponseEntity
+        .status(HttpStatus.BAD_REQUEST)
+        .body(e.getResponse());
+  }
+
+  @ExceptionHandler(InvalidDataAccessResourceUsageException.class)
+  public ResponseEntity<ErrorResponseDTO> handleInvalidDataAccessResourceUsage(
+      InvalidDataAccessResourceUsageException e) {
+    return ResponseEntity
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body(new InvalidArgumentsError("A column was not found").getResponse());
+  }
+
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<ErrorResponseDTO> handleGeneric(Exception e) {
+    return ResponseEntity
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body(new ErrorResponseDTO("Error=" + e.getMessage()));
+  }
+
   @GetMapping("/user/{id}")
-  public ResponseEntity<?> getExpense(@PathVariable Long id, @RequestHeader("token") String token) {
+  public ResponseEntity<List<ExpenseResponseDTO>> getExpense(@PathVariable Long id,
+      @RequestHeader("token") String token) {
     Login.validateToken(token);
 
-    try {
-      List<Expense> userExpenses = expensePersistence.findByOwnerIdWithDetails(id);
-      List<ExpenseResponseDTO> response = userExpenses.stream()
-          .map(ExpenseResponseDTO::new)
-          .toList();
+    List<Expense> userExpenses = expensePersistence.findByOwnerIdWithDetails(id);
+    List<ExpenseResponseDTO> response = userExpenses.stream()
+        .map(ExpenseResponseDTO::new)
+        .toList();
 
-      return ResponseEntity.ok(response);
-    } catch (InvalidDataAccessResourceUsageException e) {
-      return ResponseEntity
-          .status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .body(new InvalidArgumentsError("A column was not found").getResponse());
-    } catch (Exception e) {
-      return ResponseEntity
-          .status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .body(new ErrorResponseDTO("Error=" + e.getMessage()));
-    }
+    return ResponseEntity.ok(response);
   }
 
   @GetMapping("/{id}")
@@ -77,67 +91,63 @@ public class ExpensesController {
     Login.validateToken(token);
 
     Expense expense = expensePersistence.findById(id).orElse(null);
-    if (expense != null)
+    if (expense == null)
       return ResponseEntity.notFound().build();
 
     return ResponseEntity.ok(new ExpenseResponseDTO(expense));
   }
 
   @PostMapping
-  public ResponseEntity<?> createExpense(@RequestBody ExpenseRequestDTO dto, @RequestHeader("token") String token) {
+  public ResponseEntity<Expense> createExpense(@RequestBody ExpenseRequestDTO dto,
+      @RequestHeader("token") String token) {
     Login.validateToken(token);
 
-    try {
-      if (!dto.isValidOwner())
-        throw new Exception("Invalid Owner");
+    if (!dto.isValidOwner())
+      throw new InvalidArgumentsError("Invalid Owner");
 
-      Optional<User> user = userPersistence.findById(dto.getOwner());
+    Optional<User> user = userPersistence.findById(dto.getOwner());
 
-      if (user.isEmpty())
-        throw new Exception("Invalid Owner");
+    if (user.isEmpty())
+      throw new InvalidArgumentsError("Invalid Owner");
 
-      Instant date = Instant.now();
-      if (dto.isValidDate())
-        date = dto.getDate();
+    Instant date = Instant.now();
+    if (dto.isValidDate())
+      date = dto.getDate();
 
-      Expense newExpense = new Expense(dto.getId(), dto.getValue(), date, user.get());
+    Expense newExpense = new Expense(dto.getId(), dto.getValue(), date, user.get());
 
-      if (dto.getOwner() != null) {
-        User owner = userPersistence.findById(dto.getOwner()).orElse(null);
-        newExpense.setOwner(owner);
-      }
-
-      if (dto.getCategoryIds() != null) {
-        List<Category> categories = categoryRepository.findAllById(dto.getCategoryIds());
-        newExpense.setCategories(categories);
-      }
-
-      Expense savedExpense = expensePersistence.save(newExpense);
-
-      if (savedExpense.getOwner() != null) {
-        Expense reloaded = expensePersistence.findByOwnerIdWithDetails(savedExpense.getOwner().getId())
-            .stream()
-            .filter(e -> e.getId().equals(savedExpense.getId()))
-            .findFirst()
-            .orElse(savedExpense);
-
-        return ResponseEntity.ok(reloaded);
-      }
-
-      return ResponseEntity.ok(savedExpense);
-    } catch (Exception e) {
-      return ResponseEntity
-          .status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .body(new ErrorResponseDTO("Error=" + e.getMessage()));
+    if (dto.getOwner() != null) {
+      User owner = userPersistence.findById(dto.getOwner()).orElse(null);
+      newExpense.setOwner(owner);
     }
+
+    if (dto.getCategoryIds() != null) {
+      List<Category> categories = categoryRepository.findAllById(dto.getCategoryIds());
+      newExpense.setCategories(categories);
+    }
+
+    Expense savedExpense = expensePersistence.save(newExpense);
+
+    if (savedExpense.getOwner() != null) {
+      Expense reloaded = expensePersistence.findByOwnerIdWithDetails(savedExpense.getOwner().getId())
+          .stream()
+          .filter(e -> e.getId().equals(savedExpense.getId()))
+          .findFirst()
+          .orElse(savedExpense);
+
+      return ResponseEntity.ok(reloaded);
+    }
+
+    return ResponseEntity.ok(savedExpense);
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<?> updateExpense(@PathVariable Long id, @RequestBody ExpenseRequestDTO dto, @RequestHeader("token") String token) {
+  public ResponseEntity<?> updateExpense(@PathVariable Long id, @RequestBody ExpenseRequestDTO dto,
+      @RequestHeader("token") String token) {
     Login.validateToken(token);
 
     if (!dto.isValidValue())
-      return ResponseEntity.badRequest().body(new InvalidArgumentsError());
+      throw new InvalidArgumentsError("Invalid Value");
 
     if (dto.getDate() == null)
       dto.setDate(Instant.now());
