@@ -7,6 +7,7 @@ import java.util.Optional;
 import com.minhascontasdb.dto.ExpenseRequestDTO;
 import com.minhascontasdb.dto.ExpenseResponseDTO;
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
+import com.minhascontasdb.dto.Errors.NotFoundError;
 import com.minhascontasdb.persistence.CategoryPersistence;
 import org.springframework.web.bind.annotation.RequestHeader;
 import com.minhascontasdb.persistence.ExpensePersistence;
@@ -55,12 +56,13 @@ public class ExpensesController {
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<?> getExpenseById(@PathVariable Long id, @RequestHeader("token") String token) {
+  public ResponseEntity<ExpenseResponseDTO> getExpenseById(@PathVariable Long id,
+      @RequestHeader("token") String token) {
     Login.validateToken(token);
 
     Expense expense = expensePersistence.findById(id).orElse(null);
     if (expense == null)
-      return ResponseEntity.notFound().build();
+      throw new NotFoundError("Expense not found");
 
     return ResponseEntity.ok(new ExpenseResponseDTO(expense));
   }
@@ -110,7 +112,7 @@ public class ExpensesController {
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<?> updateExpense(@PathVariable Long id, @RequestBody ExpenseRequestDTO dto,
+  public ResponseEntity<Expense> updateExpense(@PathVariable Long id, @RequestBody ExpenseRequestDTO dto,
       @RequestHeader("token") String token) {
     Login.validateToken(token);
 
@@ -122,7 +124,7 @@ public class ExpensesController {
 
     Expense expenseToUpdate = expensePersistence.findById(id).orElse(null);
     if (expenseToUpdate == null)
-      return ResponseEntity.notFound().build();
+      throw new NotFoundError("Expense not found");
 
     expenseToUpdate.setValue(dto.getValue(), dto.getDate());
 
