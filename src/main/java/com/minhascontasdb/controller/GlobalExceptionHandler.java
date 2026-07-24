@@ -20,7 +20,6 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error.getResponse());
   }
 
-
   @ExceptionHandler(DuplicateDataError.class)
   public ResponseEntity<String> DuplicateDataError(DuplicateDataError e) {
     return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
