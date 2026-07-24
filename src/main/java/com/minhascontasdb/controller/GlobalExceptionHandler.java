@@ -36,11 +36,8 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(InvalidDataAccessResourceUsageException.class)
-  public ResponseEntity<ErrorResponseDTO> handleInvalidDataAccessResourceUsage(
-      InvalidDataAccessResourceUsageException e) {
-    return ResponseEntity
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .body(new InvalidArgumentsError("A column was not found").getResponse());
+  public ResponseEntity<ErrorResponseDTO> handleInvalidDataAccessResourceUsage(InvalidDataAccessResourceUsageException e) {
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new InvalidArgumentsError("A column was not found").getResponse());
   }
 
   @ExceptionHandler(DataIntegrityViolationException.class)
@@ -50,8 +47,6 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorResponseDTO> handleGeneric(Exception e) {
-    return ResponseEntity
-        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-        .body(new ErrorResponseDTO("Error=" + e.getMessage()));
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponseDTO("Error=" + e.getMessage()));
   }
 }
