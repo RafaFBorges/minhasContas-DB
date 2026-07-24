@@ -16,18 +16,23 @@ import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
 public class GlobalExceptionHandler {
 
   @ExceptionHandler(InvalidAccessError.class)
-  public ResponseEntity<ErrorResponseDTO> handleInvalidAccess(InvalidAccessError error) {
-    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error.getResponse());
+  public ResponseEntity<ErrorResponseDTO> handleInvalidAccess(InvalidAccessError e) {
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getResponse());
   }
 
   @ExceptionHandler(DuplicateDataError.class)
-  public ResponseEntity<String> DuplicateDataError(DuplicateDataError e) {
-    return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+  public ResponseEntity<ErrorResponseDTO> DuplicateDataError(DuplicateDataError e) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getResponse());
   }
 
   @ExceptionHandler(InvalidArgumentsError.class)
   public ResponseEntity<ErrorResponseDTO> handleInvalidArguments(InvalidArgumentsError e) {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getResponse());
+  }
+
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<ErrorResponseDTO> handleIllegalArgument(IllegalArgumentException e) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponseDTO(e.getMessage()));
   }
 
   @ExceptionHandler(InvalidDataAccessResourceUsageException.class)
