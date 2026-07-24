@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.minhascontasdb.dto.RegisterRequestDTO;
 import com.minhascontasdb.dto.RegisterResponseDTO;
+import com.minhascontasdb.dto.Errors.DuplicateDataError;
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
 import com.minhascontasdb.persistence.UserPersistence;
 import com.minhascontasdb.service.User;
@@ -27,9 +28,15 @@ public class Register {
   @PostMapping
   public ResponseEntity<?> register(@RequestBody RegisterRequestDTO userData) {
     try {
-      User newCategory = new User(userData.getName(), userData.getEmail(), userData.getPassword(), userData.getUser());
+      User newUser = new User(userData.getName(), userData.getEmail(), userData.getPassword(), userData.getUser());
 
-      User savedUser = userPersistence.save(newCategory);
+      if (userPersistence.existsByEmail(newUser.getEmail()))
+        throw new DuplicateDataError("Email já cadastrado.");
+
+      if (userPersistence.existsByUser(newUser.getUser()))
+        throw new DuplicateDataError("Nome de usuário já cadastrado.");
+
+      User savedUser = userPersistence.save(newUser);
 
       return ResponseEntity.ok(new RegisterResponseDTO(savedUser != null));
     } catch (InvalidArgumentsError error) {

@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.minhascontasdb.dto.Errors.DuplicateDataError;
 import com.minhascontasdb.dto.Errors.ErrorResponseDTO;
 import com.minhascontasdb.dto.Errors.InvalidAccessError;
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
@@ -19,11 +20,15 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error.getResponse());
   }
 
+
+  @ExceptionHandler(DuplicateDataError.class)
+  public ResponseEntity<String> DuplicateDataError(DuplicateDataError e) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+  }
+
   @ExceptionHandler(InvalidArgumentsError.class)
   public ResponseEntity<ErrorResponseDTO> handleInvalidArguments(InvalidArgumentsError e) {
-    return ResponseEntity
-        .status(HttpStatus.BAD_REQUEST)
-        .body(e.getResponse());
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getResponse());
   }
 
   @ExceptionHandler(InvalidDataAccessResourceUsageException.class)

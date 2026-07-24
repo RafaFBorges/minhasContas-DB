@@ -11,6 +11,8 @@ import org.springframework.stereotype.Repository;
 public interface UserPersistence extends JpaRepository<User, Long> {
   boolean existsByUser(String user);
 
+  boolean existsByEmail(String email);
+
   Optional<User> findById(Long id);
 
   Optional<User> findByUser(String user);
