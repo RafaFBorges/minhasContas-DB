@@ -3,7 +3,6 @@ package com.minhascontasdb.controller;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,10 +19,14 @@ import com.minhascontasdb.service.User;
 @RestController
 @CrossOrigin(origins = "*")
 public class Login {
-  static private final Map<String, UserSession> userSessions = new HashMap<>();
+  private static final Map<String, UserSession> userSessions = new HashMap<>();
 
-  @Autowired
-  private UserPersistence userRepository;
+  private final UserPersistence userRepository;
+
+  // Injeção de dependência via Construtor
+  public Login(UserPersistence userRepository) {
+    this.userRepository = userRepository;
+  }
 
   public static UserSession validateToken(String token) {
     boolean isValidToken = token != null && !token.isBlank() && Login.userSessions.containsKey(token);
