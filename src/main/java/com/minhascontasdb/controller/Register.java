@@ -1,6 +1,5 @@
 package com.minhascontasdb.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,8 +18,12 @@ import com.minhascontasdb.service.User;
 @CrossOrigin(origins = "*")
 public class Register {
 
-  @Autowired
-  private UserPersistence userPersistence;
+  private final UserPersistence userPersistence;
+
+  // Injeção de dependência via Construtor
+  public Register(UserPersistence userPersistence) {
+    this.userPersistence = userPersistence;
+  }
 
   @PostMapping
   public ResponseEntity<?> register(@RequestBody RegisterRequestDTO userData) {

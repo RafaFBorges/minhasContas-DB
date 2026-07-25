@@ -16,7 +16,6 @@ import com.minhascontasdb.service.Category;
 import com.minhascontasdb.service.Expense;
 import com.minhascontasdb.service.User;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -34,14 +33,19 @@ import org.springframework.web.bind.annotation.RestController;
 @CrossOrigin(origins = "*")
 public class ExpensesController {
 
-  @Autowired
-  private ExpensePersistence expensePersistence;
+  private final ExpensePersistence expensePersistence;
+  private final CategoryPersistence categoryRepository;
+  private final UserPersistence userPersistence;
 
-  @Autowired
-  private CategoryPersistence categoryRepository;
-
-  @Autowired
-  private UserPersistence userPersistence;
+  // Injeção de dependências via Construtor
+  public ExpensesController(
+      ExpensePersistence expensePersistence,
+      CategoryPersistence categoryRepository,
+      UserPersistence userPersistence) {
+    this.expensePersistence = expensePersistence;
+    this.categoryRepository = categoryRepository;
+    this.userPersistence = userPersistence;
+  }
 
   @GetMapping("/user/{id}")
   @Transactional(readOnly = true)

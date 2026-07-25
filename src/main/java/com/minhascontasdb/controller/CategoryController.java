@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import com.minhascontasdb.service.Category;
 import com.minhascontasdb.service.User;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -29,11 +28,14 @@ import org.springframework.web.bind.annotation.RestController;
 @CrossOrigin(origins = "*")
 public class CategoryController {
 
-  @Autowired
-  private CategoryPersistence categoryPersistence;
+  private final CategoryPersistence categoryPersistence;
+  private final UserPersistence userPersistence;
 
-  @Autowired
-  private UserPersistence userPersistence;
+  // Injeção de dependências via Construtor
+  public CategoryController(CategoryPersistence categoryPersistence, UserPersistence userPersistence) {
+    this.categoryPersistence = categoryPersistence;
+    this.userPersistence = userPersistence;
+  }
 
   @GetMapping("/user/{id}")
   public ResponseEntity<List<CategoryResponseDTO>> getCategory(@PathVariable Long id,
