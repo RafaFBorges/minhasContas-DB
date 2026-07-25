@@ -11,6 +11,7 @@ import com.minhascontasdb.dto.Errors.DuplicateDataError;
 import com.minhascontasdb.dto.Errors.ErrorResponseDTO;
 import com.minhascontasdb.dto.Errors.InvalidAccessError;
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
+import com.minhascontasdb.dto.Errors.NotFoundError;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -21,7 +22,7 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(DuplicateDataError.class)
-  public ResponseEntity<ErrorResponseDTO> DuplicateDataError(DuplicateDataError e) {
+  public ResponseEntity<ErrorResponseDTO> handleDuplicateDataError(DuplicateDataError e) {
     return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getResponse());
   }
 
@@ -38,6 +39,11 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(InvalidDataAccessResourceUsageException.class)
   public ResponseEntity<ErrorResponseDTO> handleInvalidDataAccessResourceUsage(InvalidDataAccessResourceUsageException e) {
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new InvalidArgumentsError("A column was not found").getResponse());
+  }
+
+  @ExceptionHandler(NotFoundError.class)
+  public ResponseEntity<ErrorResponseDTO> handleNotFoundError(NotFoundError e) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getResponse());
   }
 
   @ExceptionHandler(DataIntegrityViolationException.class)

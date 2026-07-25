@@ -18,6 +18,7 @@ import com.minhascontasdb.service.User;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,6 +44,7 @@ public class ExpensesController {
   private UserPersistence userPersistence;
 
   @GetMapping("/user/{id}")
+  @Transactional(readOnly = true)
   public ResponseEntity<List<ExpenseResponseDTO>> getExpense(@PathVariable Long id,
       @RequestHeader("token") String token) {
     Login.validateToken(token);
@@ -56,6 +58,7 @@ public class ExpensesController {
   }
 
   @GetMapping("/{id}")
+  @Transactional(readOnly = true)
   public ResponseEntity<ExpenseResponseDTO> getExpenseById(@PathVariable Long id,
       @RequestHeader("token") String token) {
     Login.validateToken(token);
@@ -68,7 +71,7 @@ public class ExpensesController {
   }
 
   @PostMapping
-  public ResponseEntity<Expense> createExpense(@RequestBody ExpenseRequestDTO dto,
+  public ResponseEntity<ExpenseResponseDTO> createExpense(@RequestBody ExpenseRequestDTO dto,
       @RequestHeader("token") String token) {
     Login.validateToken(token);
 
@@ -105,14 +108,14 @@ public class ExpensesController {
           .findFirst()
           .orElse(savedExpense);
 
-      return ResponseEntity.ok(reloaded);
+      return ResponseEntity.ok(new ExpenseResponseDTO(reloaded));
     }
 
-    return ResponseEntity.ok(savedExpense);
+    return ResponseEntity.ok(new ExpenseResponseDTO(savedExpense));
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<Expense> updateExpense(@PathVariable Long id, @RequestBody ExpenseRequestDTO dto,
+  public ResponseEntity<ExpenseResponseDTO> updateExpense(@PathVariable Long id, @RequestBody ExpenseRequestDTO dto,
       @RequestHeader("token") String token) {
     Login.validateToken(token);
 
@@ -141,7 +144,7 @@ public class ExpensesController {
         .findFirst()
         .orElse(updatedExpense);
 
-    return ResponseEntity.ok(reloaded);
+    return ResponseEntity.ok(new ExpenseResponseDTO(reloaded));
   }
 
   @DeleteMapping("/{id}")

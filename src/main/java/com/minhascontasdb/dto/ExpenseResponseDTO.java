@@ -17,7 +17,10 @@ public class ExpenseResponseDTO {
     this.id = expense.getId();
     this.value = expense.getValue();
 
-    this.date = expense.getLastDate();
+    this.date = expense.getLastDate() != null 
+      ? expense.getLastDate() 
+      : Instant.now();
+
     this.owner = expense.getOwner() != null ? expense.getOwner().getId() : null;
     this.categoryIds = expense.getCategories() != null
         ? expense.getCategories().stream().map(c -> c.getId()).toList()
