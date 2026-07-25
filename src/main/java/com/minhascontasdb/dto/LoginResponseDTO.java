@@ -1,33 +1,36 @@
 package com.minhascontasdb.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public class LoginResponseDTO {
 
   private String token;
-  private LocalDateTime expireTime;
+  private Instant expiresAt;
   private String user;
   private Long id;
   private String name;
 
-  public LoginResponseDTO(String token, LocalDateTime expireTime, Long id, String user, String name) {
+  public LoginResponseDTO() {
+  }
+
+  public LoginResponseDTO(String token, Instant expiresAt, Long id, String user, String name) {
     this.token = token;
-    this.expireTime = expireTime;
+    this.expiresAt = expiresAt;
     this.user = user;
     this.id = id;
     this.name = name;
   }
 
-  public LoginResponseDTO(String token, LocalDateTime expireTime) {
-    this(token, expireTime, null, null, null);
+  public LoginResponseDTO(String token, Instant expiresAt) {
+    this(token, expiresAt, null, null, null);
   }
 
   public String getToken() {
     return token;
   }
 
-  public LocalDateTime getExpireTime() {
-    return expireTime;
+  public Instant getExpiresAt() {
+    return expiresAt;
   }
 
   public String getUser() {
@@ -40,5 +43,25 @@ public class LoginResponseDTO {
 
   public String getName() {
     return name;
+  }
+
+  public void setToken(String token) {
+    this.token = token;
+  }
+
+  public void setExpiresAt(Instant expiresAt) {
+    this.expiresAt = expiresAt;
+  }
+
+  public void setUser(String user) {
+    this.user = user;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
+  }
+
+  public void setName(String name) {
+    this.name = name;
   }
 }

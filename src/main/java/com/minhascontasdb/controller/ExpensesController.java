@@ -5,14 +5,20 @@ import java.util.List;
 import java.util.Optional;
 
 import com.minhascontasdb.dto.ExpenseRequestDTO;
+import com.minhascontasdb.dto.ExpenseResponseDTO;
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
+import com.minhascontasdb.dto.Errors.NotFoundError;
 import com.minhascontasdb.persistence.CategoryPersistence;
+import org.springframework.web.bind.annotation.RequestHeader;
 import com.minhascontasdb.persistence.ExpensePersistence;
+import com.minhascontasdb.persistence.UserPersistence;
 import com.minhascontasdb.service.Category;
 import com.minhascontasdb.service.Expense;
+import com.minhascontasdb.service.User;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,25 +40,59 @@ public class ExpensesController {
   @Autowired
   private CategoryPersistence categoryRepository;
 
-  @GetMapping
-  public ResponseEntity<List<Expense>> getExpense() {
+  @Autowired
+  private UserPersistence userPersistence;
 
-    List<Expense> allExpenses = expensePersistence.findAll();
-    return ResponseEntity.ok(allExpenses);
+  @GetMapping("/user/{id}")
+  @Transactional(readOnly = true)
+  public ResponseEntity<List<ExpenseResponseDTO>> getExpense(@PathVariable Long id,
+      @RequestHeader("token") String token) {
+    Login.validateToken(token);
+
+    List<Expense> userExpenses = expensePersistence.findByOwnerIdWithDetails(id);
+    List<ExpenseResponseDTO> response = userExpenses.stream()
+        .map(ExpenseResponseDTO::new)
+        .toList();
+
+    return ResponseEntity.ok(response);
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<Expense> getExpenseById(@PathVariable Long id) {
-    Optional<Expense> expense = expensePersistence.findById(id);
-    if (!expense.isPresent())
-      return ResponseEntity.notFound().build();
+  @Transactional(readOnly = true)
+  public ResponseEntity<ExpenseResponseDTO> getExpenseById(@PathVariable Long id,
+      @RequestHeader("token") String token) {
+    Login.validateToken(token);
 
-    return ResponseEntity.ok(expense.get());
+    Expense expense = expensePersistence.findById(id).orElse(null);
+    if (expense == null)
+      throw new NotFoundError("Expense not found");
+
+    return ResponseEntity.ok(new ExpenseResponseDTO(expense));
   }
 
   @PostMapping
-  public ResponseEntity<Expense> createExpense(@RequestBody ExpenseRequestDTO dto) {
-    Expense newExpense = new Expense(dto.getValue(), dto.getDate());
+  public ResponseEntity<ExpenseResponseDTO> createExpense(@RequestBody ExpenseRequestDTO dto,
+      @RequestHeader("token") String token) {
+    Login.validateToken(token);
+
+    if (!dto.isValidOwner())
+      throw new InvalidArgumentsError("Invalid Owner");
+
+    Optional<User> user = userPersistence.findById(dto.getOwner());
+
+    if (user.isEmpty())
+      throw new InvalidArgumentsError("Invalid Owner");
+
+    Instant date = Instant.now();
+    if (dto.isValidDate())
+      date = dto.getDate();
+
+    Expense newExpense = new Expense(dto.getId(), dto.getValue(), date, user.get());
+
+    if (dto.getOwner() != null) {
+      User owner = userPersistence.findById(dto.getOwner()).orElse(null);
+      newExpense.setOwner(owner);
+    }
 
     if (dto.getCategoryIds() != null) {
       List<Category> categories = categoryRepository.findAllById(dto.getCategoryIds());
@@ -61,23 +101,34 @@ public class ExpensesController {
 
     Expense savedExpense = expensePersistence.save(newExpense);
 
-    return ResponseEntity.ok(savedExpense);
+    if (savedExpense.getOwner() != null) {
+      Expense reloaded = expensePersistence.findByOwnerIdWithDetails(savedExpense.getOwner().getId())
+          .stream()
+          .filter(e -> e.getId().equals(savedExpense.getId()))
+          .findFirst()
+          .orElse(savedExpense);
+
+      return ResponseEntity.ok(new ExpenseResponseDTO(reloaded));
+    }
+
+    return ResponseEntity.ok(new ExpenseResponseDTO(savedExpense));
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<?> updateExpense(@PathVariable Long id, @RequestBody ExpenseRequestDTO dto) {
+  public ResponseEntity<ExpenseResponseDTO> updateExpense(@PathVariable Long id, @RequestBody ExpenseRequestDTO dto,
+      @RequestHeader("token") String token) {
+    Login.validateToken(token);
+
     if (!dto.isValidValue())
-      return ResponseEntity.badRequest().body(new InvalidArgumentsError());
+      throw new InvalidArgumentsError("Invalid Value");
 
     if (dto.getDate() == null)
       dto.setDate(Instant.now());
 
-    Optional<Expense> existingExpense = expensePersistence.findById(id);
+    Expense expenseToUpdate = expensePersistence.findById(id).orElse(null);
+    if (expenseToUpdate == null)
+      throw new NotFoundError("Expense not found");
 
-    if (!existingExpense.isPresent())
-      return ResponseEntity.notFound().build();
-
-    Expense expenseToUpdate = existingExpense.get();
     expenseToUpdate.setValue(dto.getValue(), dto.getDate());
 
     if (dto.getCategoryIds() != null) {
@@ -86,11 +137,20 @@ public class ExpensesController {
     }
 
     Expense updatedExpense = expensePersistence.save(expenseToUpdate);
-    return ResponseEntity.ok(updatedExpense);
+
+    Expense reloaded = expensePersistence.findByOwnerIdWithDetails(updatedExpense.getOwner().getId())
+        .stream()
+        .filter(e -> e.getId().equals(updatedExpense.getId()))
+        .findFirst()
+        .orElse(updatedExpense);
+
+    return ResponseEntity.ok(new ExpenseResponseDTO(reloaded));
   }
 
   @DeleteMapping("/{id}")
-  public ResponseEntity<Void> deleteExpense(@PathVariable Long id) {
+  public ResponseEntity<Void> deleteExpense(@PathVariable Long id, @RequestHeader("token") String token) {
+    Login.validateToken(token);
+
     if (!expensePersistence.existsById(id))
       return ResponseEntity.notFound().build();
 

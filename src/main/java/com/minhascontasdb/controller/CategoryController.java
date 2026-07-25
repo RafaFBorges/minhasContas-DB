@@ -4,15 +4,15 @@ import java.util.List;
 import java.util.Optional;
 
 import com.minhascontasdb.dto.CategoryRequestDTO;
-import com.minhascontasdb.dto.Errors.ErrorResponseDTO;
+import com.minhascontasdb.dto.CategoryResponseDTO;
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
 import com.minhascontasdb.persistence.CategoryPersistence;
+import com.minhascontasdb.persistence.UserPersistence;
+import org.springframework.web.bind.annotation.RequestHeader;
 import com.minhascontasdb.service.Category;
+import com.minhascontasdb.service.User;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.InvalidDataAccessResourceUsageException;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,72 +32,69 @@ public class CategoryController {
   @Autowired
   private CategoryPersistence categoryPersistence;
 
-  @GetMapping
-  public ResponseEntity<?> getCategory() {
-    try {
-      List<Category> allCategories = categoryPersistence.findAll();
+  @Autowired
+  private UserPersistence userPersistence;
 
-      return ResponseEntity.ok(allCategories);
-    } catch (InvalidDataAccessResourceUsageException e) {
-      return ResponseEntity
-          .status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .body(new InvalidArgumentsError("A column was not found").getResponse());
-    } catch (Exception e) {
-      return ResponseEntity
-          .status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .body(new ErrorResponseDTO("Error=" + e.getMessage()));
-    }
+  @GetMapping("/user/{id}")
+  public ResponseEntity<List<CategoryResponseDTO>> getCategory(@PathVariable Long id,
+      @RequestHeader("token") String token) {
+    Login.validateToken(token);
+
+    if (!userPersistence.existsById(id))
+      return ResponseEntity.notFound().build();
+
+    List<CategoryResponseDTO> allCategories = categoryPersistence.findCategoryDTOsByOwnerId(id);
+
+    return ResponseEntity.ok(allCategories);
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<Category> getCategoryById(@PathVariable Long id) {
-    Optional<Category> category = categoryPersistence.findById(id);
+  public ResponseEntity<Category> getCategoryById(@PathVariable Long id, @RequestHeader("token") String token) {
+    Login.validateToken(token);
 
-    if (category.isPresent())
-      return ResponseEntity.ok(category.get());
-    else
-      return ResponseEntity.notFound().build();
+    return categoryPersistence.findById(id)
+        .map(ResponseEntity::ok)
+        .orElse(ResponseEntity.notFound().build());
   }
 
   @PostMapping
-  public ResponseEntity<?> createCategory(@RequestBody CategoryRequestDTO dto) {
-    try {
-      Category newCategory = new Category(dto.getName(), dto.getOwner());
+  public ResponseEntity<Category> createCategory(@RequestBody CategoryRequestDTO dto,
+      @RequestHeader("token") String token) {
+    Login.validateToken(token);
 
-      Category savedCategory = categoryPersistence.save(newCategory);
-      return ResponseEntity.ok(savedCategory);
-    } catch (InvalidArgumentsError error) {
-      return ResponseEntity.badRequest().body(error.getResponse());
-    } catch (InvalidDataAccessResourceUsageException error) {
-      return ResponseEntity.badRequest().body(error);
-    } catch (DataIntegrityViolationException error) {
-      return ResponseEntity.badRequest().body(new InvalidArgumentsError(error.getMessage()).getResponse());
-    }
+    User owner = userPersistence.findById(dto.getOwner())
+        .orElseThrow(() -> new InvalidArgumentsError("Owner user not found"));
+
+    Category newCategory = new Category(dto.getName(), owner);
+
+    Category savedCategory = categoryPersistence.save(newCategory);
+    return ResponseEntity.ok(savedCategory);
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<?> updateCategory(@PathVariable Long id, @RequestBody CategoryRequestDTO dto) {
-    try {
-      if (dto.getName() == null)
-        return ResponseEntity.badRequest().body(new InvalidArgumentsError().getResponse());
+  public ResponseEntity<Category> updateCategory(@PathVariable Long id, @RequestBody CategoryRequestDTO dto,
+      @RequestHeader("token") String token) {
+    Login.validateToken(token);
 
-      Optional<Category> existingCategory = categoryPersistence.findById(id);
+    if (dto.getName() == null)
+      throw new InvalidArgumentsError("Empty name");
 
-      if (!existingCategory.isPresent())
-        return ResponseEntity.notFound().build();
+    Optional<Category> existingCategory = categoryPersistence.findById(id);
 
-      Category categoryToUpdate = existingCategory.get();
-      categoryToUpdate.setName(dto.getName());
+    if (!existingCategory.isPresent())
+      return ResponseEntity.notFound().build();
 
-      Category updatedCategory = categoryPersistence.save(categoryToUpdate);
-      return ResponseEntity.ok(updatedCategory);
-    } catch (InvalidArgumentsError error) {
-      return ResponseEntity.badRequest().body(error.getResponse());
-    }
+    Category categoryToUpdate = existingCategory.get();
+    categoryToUpdate.setName(dto.getName());
+
+    Category updatedCategory = categoryPersistence.save(categoryToUpdate);
+    return ResponseEntity.ok(updatedCategory);
   }
 
   @DeleteMapping("/{id}")
-  public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
+  public ResponseEntity<Void> deleteCategory(@PathVariable Long id, @RequestHeader("token") String token) {
+    Login.validateToken(token);
+
     if (!categoryPersistence.existsById(id))
       return ResponseEntity.notFound().build();
 

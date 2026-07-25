@@ -1,10 +1,16 @@
 package com.minhascontasdb.service;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
@@ -15,17 +21,29 @@ public class User {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
   private String name;
+
+  @Column(name = "email", nullable = false, unique = true)
   private String email;
   private String password;
 
-  @Column(name = "username")
+  @Column(name = "username", unique = true)
   private String user;
+
+  @OneToMany(mappedBy = "owner")
+  @JsonIgnore
+  private List<Expense> expenses;
+
+  @OneToMany(mappedBy = "owner")
+  @JsonIgnore
+  private List<Category> categories;
 
   public User() {
     this.name = "";
     this.email = "";
     this.user = "";
     this.password = "";
+    this.expenses = new ArrayList<>();
+    this.categories = new ArrayList<>();
   }
 
   public User(String name, String email, String password, String user) {
@@ -33,6 +51,8 @@ public class User {
     this.email = email;
     this.user = user;
     this.password = password;
+    this.expenses = new ArrayList<>();
+    this.categories = new ArrayList<>();
   }
 
   public Long getId() {
@@ -73,5 +93,21 @@ public class User {
 
   public void setUser(String newUser) {
     this.user = newUser;
+  }
+
+  public List<Expense> getExpenses() {
+    return this.expenses;
+  }
+
+  public void setExpenses(List<Expense> expenses) {
+    this.expenses = expenses;
+  }
+
+  public List<Category> getCategories() {
+    return this.categories;
+  }
+
+  public void setCategories(List<Category> categories) {
+    this.categories = categories;
   }
 }

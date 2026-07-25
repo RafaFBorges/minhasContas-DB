@@ -4,12 +4,12 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
@@ -22,36 +22,36 @@ public class Expense {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
   private double value;
-  private List<Instant> date;
+  private Instant date;
 
-  @Column(name = "owner")
-  private Long owner;
+  @ManyToOne
+  @JoinColumn(name = "owner")
+  private User owner;
 
   @ManyToMany
   @JoinTable(name = "expense_category", joinColumns = @JoinColumn(name = "expense_id"), inverseJoinColumns = @JoinColumn(name = "category_id"))
   private List<Category> categories;
 
   public Expense() {
-    this.date = new ArrayList<>();
+    this.date = Instant.now();
     this.categories = new ArrayList<>();
-    this.owner = (long) -1;
+    this.owner = null;
   }
 
   public Expense(double value, Instant date) {
-    this.date = new ArrayList<>();
+    this.date = date;
     this.categories = new ArrayList<>();
     this.value = value;
-    this.date.add(date);
-    this.owner = (long) -1;
+    this.owner = null;
   }
 
   public Expense(Long id, Double value, Instant date) {
     this(value, date);
     this.id = id;
-    this.owner = (long) -1;
+    this.owner = null;
   }
 
-  public Expense(Long id, Double value, Instant date, Long owner) {
+  public Expense(Long id, Double value, Instant date, User owner) {
     this(id, value, date);
     this.owner = owner;
   }
@@ -68,8 +68,12 @@ public class Expense {
     return this.value;
   }
 
-  public Long getOwner() {
+  public User getOwner() {
     return this.owner;
+  }
+
+  public void setOwner(User owner) {
+    this.owner = owner;
   }
 
   public List<Category> getCategories() {
@@ -81,20 +85,16 @@ public class Expense {
   }
 
   public void setValue(double value, Instant date) {
+    this.date = date;
     this.value = value;
-    this.date.add(date);
   }
 
   public void setValue(double value) {
+    this.date = Instant.now();
     this.value = value;
-    this.date.add(Instant.now());
   }
 
   public Instant getLastDate() {
-    return this.date.get(this.date.size() - 1);
-  }
-
-  public List<Instant> getDates() {
     return this.date;
   }
 }

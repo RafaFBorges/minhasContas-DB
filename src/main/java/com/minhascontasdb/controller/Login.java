@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.minhascontasdb.dto.LoginRequestDTO;
 import com.minhascontasdb.dto.LoginResponseDTO;
 import com.minhascontasdb.dto.UserSession;
+import com.minhascontasdb.dto.Errors.InvalidAccessError;
 import com.minhascontasdb.persistence.UserPersistence;
 import com.minhascontasdb.service.User;
 
@@ -24,29 +25,37 @@ public class Login {
   @Autowired
   private UserPersistence userRepository;
 
-  @PostMapping("/login")
-  public ResponseEntity<LoginResponseDTO> tryLogin(@RequestBody LoginRequestDTO loginData) {
-    UserSession userSession = Login.userSessions.get(loginData.getUser());
+  public static UserSession validateToken(String token) {
+    boolean isValidToken = token != null && !token.isBlank() && Login.userSessions.containsKey(token);
+    if (isValidToken) {
+      UserSession session = Login.userSessions.get(token);
+      isValidToken = session != null && !session.isExpired();
 
-    if (userSession != null) {
-      if (!userSession.isExpired())
-        return ResponseEntity.ok(
-            new LoginResponseDTO(
-                userSession.token(),
-                userSession.expiresAt(),
-                userSession.id(),
-                userSession.user(),
-                userSession.name()));
+      if (isValidToken)
+        return session;
 
-      userSessions.remove(loginData.getUser());
+      if (session != null)
+        userSessions.remove(token);
     }
 
+    throw new InvalidAccessError("Invalid token");
+  }
+
+  public static void registerSession(UserSession session) {
+    if (session == null || session.token() == null || session.token().isBlank())
+      return;
+
+    Login.userSessions.put(session.token(), session);
+  }
+
+  @PostMapping("/login")
+  public ResponseEntity<LoginResponseDTO> tryLogin(@RequestBody LoginRequestDTO loginData) {
     User user = userRepository.findByUser(loginData.getUser()).orElse(null);
     if (user != null &&
         user.getUser().equals(loginData.getUser()) &&
         user.getPassword().equals(loginData.getPassword())) {
       UserSession record = UserSession.create(user.getId(), user.getUser(), user.getName());
-      Login.userSessions.put(loginData.getUser(), record);
+      Login.registerSession(record);
 
       return ResponseEntity
           .ok(new LoginResponseDTO(

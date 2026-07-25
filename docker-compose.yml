@@ -4,7 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     ports:
       - '3000:8080'
     env_file:
@@ -17,6 +18,7 @@ services:
         condition: service_healthy
     volumes:
       - .:/app
+      - m2-cache:/root/.m2
       - /var/run/docker.sock:/var/run/docker.sock
     env_file:
       - .env
@@ -33,14 +35,11 @@ services:
     env_file:
       - .env
     healthcheck:
-      test:
-        - CMD
-        - pg_isready
-        - '-U'
-        - postgres
+      test: ["CMD", "pg_isready", "-U", "postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
 
 volumes:
   pgdata: null
+  m2-cache: null
