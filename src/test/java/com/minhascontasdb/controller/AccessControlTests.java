@@ -187,19 +187,68 @@ public class AccessControlTests {
   }
 
   @Test
-  void expenseKeepsOnlyCategoriesTheUserCanSee() throws Exception {
+  void createExpenseIgnoresTheIdSentByTheClient() throws Exception {
     Account a = newAccount("a");
     Account b = newAccount("b");
-    Category others = newCategory(b, "do-b");
+    Expense victim = newExpense(b);
+
+    // Tentativa de sobrescrever a despesa de B mandando o id dela
+    String response = call(post("/expense"), a, Map.of("id", victim.getId(), "value", 1.0, "owner", a.id()))
+        .andExpect(status().isOk())
+        .andReturn().getResponse().getContentAsString();
+
+    Number createdId = JsonPath.read(response, "$.id");
+    assertTrue(createdId.longValue() != victim.getId());
+
+    Expense untouched = expensePersistence.findById(victim.getId()).orElseThrow();
+    assertEquals(b.id(), untouched.getOwner().getId());
+    assertEquals(10.0, untouched.getValue());
+    assertEquals(1, expensePersistence.findByOwnerIdWithDetails(a.id()).size());
+  }
+
+  @Test
+  void expenseAcceptsOwnAndSharedCategories() throws Exception {
+    Account a = newAccount("a");
     Category mine = newCategory(a, "do-a");
     Category shared = systemCategory();
 
     call(post("/expense"), a, Map.of("value", 5.0, "owner", a.id(),
-        "categoryIds", List.of(others.getId(), mine.getId(), shared.getId())))
+        "categoryIds", List.of(mine.getId(), shared.getId())))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.categoryIds", hasSize(2)))
         .andExpect(jsonPath("$.categoryIds").value(org.hamcrest.Matchers.containsInAnyOrder(
             mine.getId().intValue(), shared.getId().intValue())));
+  }
+
+  @Test
+  void expenseWithUnavailableCategoryIsNotFoundAndChangesNothing() throws Exception {
+    Account a = newAccount("a");
+    Account b = newAccount("b");
+    Category mine = newCategory(a, "do-a");
+    Category others = newCategory(b, "do-b");
+    long unknown = 987654321L;
+
+    // Criação: categoria de outro usuário ou inexistente derruba o pedido e nada é criado
+    call(post("/expense"), a, Map.of("value", 5.0, "owner", a.id(), "categoryIds", List.of(others.getId())))
+        .andExpect(status().isNotFound());
+    call(post("/expense"), a, Map.of("value", 5.0, "owner", a.id(), "categoryIds", List.of(unknown)))
+        .andExpect(status().isNotFound());
+    assertTrue(expensePersistence.findByOwnerIdWithDetails(a.id()).isEmpty());
+
+    // Edição: a despesa continua com o valor e as categorias que tinha
+    String created = call(post("/expense"), a, Map.of("value", 5.0, "owner", a.id(), "categoryIds", List.of(mine.getId())))
+        .andExpect(status().isOk())
+        .andReturn().getResponse().getContentAsString();
+    Number expenseId = JsonPath.read(created, "$.id");
+    String url = "/expense/" + expenseId.longValue();
+
+    call(put(url), a, Map.of("value", 77.0, "categoryIds", List.of(mine.getId(), others.getId())))
+        .andExpect(status().isNotFound());
+
+    call(get(url), a, null)
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.value").value(5.0))
+        .andExpect(jsonPath("$.categoryIds", hasSize(1)));
   }
 
   // ---------- categorias ----------

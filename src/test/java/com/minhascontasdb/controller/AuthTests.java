@@ -133,6 +133,18 @@ public class AuthTests {
   }
 
   @Test
+  void systemUsernameIsReservedInAnyLetterCase() throws Exception {
+    assertEquals(409, register("System", PASSWORD));
+    assertEquals(409, register("system", PASSWORD));
+    assertEquals(409, register("SYSTEM", PASSWORD));
+
+    // a conta de serviço continua sendo a única com esse nome e sem a senha informada
+    User system = userPersistence.findByUser(UserInitialDataEnsurer.SYSTEM_USERNAME).orElseThrow();
+    assertFalse(passwordEncoder.matches(PASSWORD, system.getPassword()));
+    assertFalse(userPersistence.existsByUser("system"));
+  }
+
+  @Test
   void systemUserHasRandomPasswordAndCannotLogin() throws Exception {
     User system = userPersistence.findByUser(UserInitialDataEnsurer.SYSTEM_USERNAME).orElseThrow();
 
@@ -141,9 +153,16 @@ public class AuthTests {
     assertEquals(401, login(UserInitialDataEnsurer.SYSTEM_USERNAME, "system"));
 
     // Mesmo que alguém defina uma senha conhecida, a conta System é recusada
-    system.setPassword(passwordEncoder.encode(PASSWORD));
-    userPersistence.save(system);
+    String originalHash = system.getPassword();
+    try {
+      system.setPassword(passwordEncoder.encode(PASSWORD));
+      userPersistence.save(system);
 
-    assertEquals(401, login(UserInitialDataEnsurer.SYSTEM_USERNAME, PASSWORD));
+      assertEquals(401, login(UserInitialDataEnsurer.SYSTEM_USERNAME, PASSWORD));
+    } finally {
+      // Restaura a senha aleatória para este teste não afetar os outros, qualquer que seja a ordem
+      system.setPassword(originalHash);
+      userPersistence.save(system);
+    }
   }
 }

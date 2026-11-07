@@ -43,17 +43,18 @@ public class Register {
     if (MAX_PASSWORD_BYTES < password.getBytes(StandardCharsets.UTF_8).length)
       throw new InvalidArgumentsError("Password too long");
 
-    User newUser = new User(userData.getName(), userData.getEmail(), passwordEncoder.encode(password), userData.getUser());
-
-    if (userPersistence.existsByEmail(newUser.getEmail()))
+    if (userPersistence.existsByEmail(userData.getEmail()))
       throw new DuplicateDataError("Email já cadastrado.");
 
     // O nome da conta de serviço é reservado, em qualquer combinação de maiúsculas e minúsculas
-    if (UserInitialDataEnsurer.SYSTEM_USERNAME.equalsIgnoreCase(newUser.getUser()))
+    if (UserInitialDataEnsurer.SYSTEM_USERNAME.equalsIgnoreCase(userData.getUser()))
       throw new DuplicateDataError("Nome de usuário já cadastrado.");
 
-    if (userPersistence.existsByUser(newUser.getUser()))
+    if (userPersistence.existsByUser(userData.getUser()))
       throw new DuplicateDataError("Nome de usuário já cadastrado.");
+
+    // O hash (caro de calcular) só é feito depois de todas as validações baratas
+    User newUser = new User(userData.getName(), userData.getEmail(), passwordEncoder.encode(password), userData.getUser());
 
     User savedUser = userPersistence.save(newUser);
 
