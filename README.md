@@ -109,6 +109,15 @@ mvn clean install
 http://localhost:8080
 ```
 
+### Migrações do banco:
+
+O schema é versionado com Flyway em `src/main/resources/db/migration` (`V1__baseline.sql`, `V2__....sql`, ...).
+
+  - Para alterar uma entidade (nova coluna, tabela...), crie um novo arquivo `V<n>__descricao.sql`. Nunca edite um já aplicado.
+  - O Hibernate só valida (`ddl-auto=validate`): se a entidade divergir do banco, a aplicação não sobe.
+  - Banco vazio (sandbox, testes): recebe todas as migrações. Banco que já tinha tabelas: é marcado como V1 sem executá-lo.
+  - Recriar o sandbox do zero: `docker compose down -v && docker compose up --build`.
+
 <!-- Tecnologias -->
 <div id="tecnologias-utilizadas"/>
 <h2> Stack de tecnologias: </h2>

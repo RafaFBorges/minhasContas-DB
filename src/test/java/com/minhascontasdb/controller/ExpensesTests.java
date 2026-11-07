@@ -71,7 +71,7 @@ public class ExpensesTests {
 
   @Container
   @ServiceConnection
-  static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:latest");
+  static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15");
 
   @Test
   void contextLoads() {
