@@ -8,7 +8,7 @@ public class InvalidArgumentsError extends ErrorResponseDTOObject {
   }
 
   public InvalidArgumentsError(String adicionalMessage) {
-    super((adicionalMessage != "")
+    super((adicionalMessage != null && !adicionalMessage.isEmpty())
         ? InvalidArgumentsError.MESSAGE + ' ' + adicionalMessage
         : InvalidArgumentsError.MESSAGE);
   }

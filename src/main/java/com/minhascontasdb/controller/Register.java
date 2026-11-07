@@ -14,6 +14,7 @@ import com.minhascontasdb.dto.RegisterRequestDTO;
 import com.minhascontasdb.dto.RegisterResponseDTO;
 import com.minhascontasdb.dto.Errors.DuplicateDataError;
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
+import com.minhascontasdb.inicialization.UserInitialDataEnsurer;
 import com.minhascontasdb.persistence.UserPersistence;
 import com.minhascontasdb.service.User;
 
@@ -46,6 +47,10 @@ public class Register {
 
     if (userPersistence.existsByEmail(newUser.getEmail()))
       throw new DuplicateDataError("Email já cadastrado.");
+
+    // O nome da conta de serviço é reservado, em qualquer combinação de maiúsculas e minúsculas
+    if (UserInitialDataEnsurer.SYSTEM_USERNAME.equalsIgnoreCase(newUser.getUser()))
+      throw new DuplicateDataError("Nome de usuário já cadastrado.");
 
     if (userPersistence.existsByUser(newUser.getUser()))
       throw new DuplicateDataError("Nome de usuário já cadastrado.");

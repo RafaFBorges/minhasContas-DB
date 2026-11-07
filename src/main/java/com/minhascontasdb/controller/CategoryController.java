@@ -1,14 +1,17 @@
 package com.minhascontasdb.controller;
 
 import java.util.List;
-import java.util.Optional;
 
 import com.minhascontasdb.dto.CategoryRequestDTO;
 import com.minhascontasdb.dto.CategoryResponseDTO;
+import com.minhascontasdb.dto.UserSession;
+import com.minhascontasdb.dto.Errors.ForbiddenError;
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
+import com.minhascontasdb.dto.Errors.NotFoundError;
 import com.minhascontasdb.persistence.CategoryPersistence;
 import com.minhascontasdb.persistence.UserPersistence;
 import org.springframework.web.bind.annotation.RequestHeader;
+import com.minhascontasdb.service.AccessPolicy;
 import com.minhascontasdb.service.Category;
 import com.minhascontasdb.service.User;
 
@@ -37,13 +40,30 @@ public class CategoryController {
     this.userPersistence = userPersistence;
   }
 
+  // Categoria de outro usuário não existe para quem pede. As da conta System são visíveis a todos
+  private Category findReadableCategory(Long id, UserSession session) {
+    return categoryPersistence.findById(id)
+        .filter(category -> AccessPolicy.canRead(category, session))
+        .orElseThrow(() -> new NotFoundError("Category not found"));
+  }
+
+  // Só quem é dono altera. As categorias da conta System são visíveis, mas só um admin poderá alterá-las
+  private Category findCategoryToChange(Long id, UserSession session) {
+    Category category = findReadableCategory(id, session);
+
+    if (!AccessPolicy.isOwnedBy(category.getOwner(), session))
+      throw new ForbiddenError("Shared category");
+
+    return category;
+  }
+
   @GetMapping("/user/{id}")
   public ResponseEntity<List<CategoryResponseDTO>> getCategory(@PathVariable Long id,
       @RequestHeader("token") String token) {
-    Login.validateToken(token);
+    UserSession session = Login.validateToken(token);
 
-    if (!userPersistence.existsById(id))
-      return ResponseEntity.notFound().build();
+    if (!session.id().equals(id))
+      throw new NotFoundError("User not found");
 
     List<CategoryResponseDTO> allCategories = categoryPersistence.findCategoryDTOsByOwnerId(id);
 
@@ -51,54 +71,51 @@ public class CategoryController {
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<Category> getCategoryById(@PathVariable Long id, @RequestHeader("token") String token) {
-    Login.validateToken(token);
+  public ResponseEntity<CategoryResponseDTO> getCategoryById(@PathVariable Long id,
+      @RequestHeader("token") String token) {
+    UserSession session = Login.validateToken(token);
 
-    return categoryPersistence.findById(id)
-        .map(ResponseEntity::ok)
-        .orElse(ResponseEntity.notFound().build());
+    return ResponseEntity.ok(new CategoryResponseDTO(findReadableCategory(id, session)));
   }
 
   @PostMapping
-  public ResponseEntity<Category> createCategory(@RequestBody CategoryRequestDTO dto,
+  public ResponseEntity<CategoryResponseDTO> createCategory(@RequestBody CategoryRequestDTO dto,
       @RequestHeader("token") String token) {
-    Login.validateToken(token);
+    UserSession session = Login.validateToken(token);
 
-    User owner = userPersistence.findById(dto.getOwner())
+    if (dto.getOwner() == null)
+      throw new InvalidArgumentsError("Owner user not found");
+
+    if (!session.id().equals(dto.getOwner()))
+      throw new NotFoundError("Owner not found");
+
+    User owner = userPersistence.findById(session.id())
         .orElseThrow(() -> new InvalidArgumentsError("Owner user not found"));
 
     Category newCategory = new Category(dto.getName(), owner);
 
-    Category savedCategory = categoryPersistence.save(newCategory);
-    return ResponseEntity.ok(savedCategory);
+    return ResponseEntity.ok(new CategoryResponseDTO(categoryPersistence.save(newCategory)));
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<Category> updateCategory(@PathVariable Long id, @RequestBody CategoryRequestDTO dto,
+  public ResponseEntity<CategoryResponseDTO> updateCategory(@PathVariable Long id, @RequestBody CategoryRequestDTO dto,
       @RequestHeader("token") String token) {
-    Login.validateToken(token);
+    UserSession session = Login.validateToken(token);
 
     if (dto.getName() == null)
       throw new InvalidArgumentsError("Empty name");
 
-    Optional<Category> existingCategory = categoryPersistence.findById(id);
-
-    if (!existingCategory.isPresent())
-      return ResponseEntity.notFound().build();
-
-    Category categoryToUpdate = existingCategory.get();
+    Category categoryToUpdate = findCategoryToChange(id, session);
     categoryToUpdate.setName(dto.getName());
 
-    Category updatedCategory = categoryPersistence.save(categoryToUpdate);
-    return ResponseEntity.ok(updatedCategory);
+    return ResponseEntity.ok(new CategoryResponseDTO(categoryPersistence.save(categoryToUpdate)));
   }
 
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteCategory(@PathVariable Long id, @RequestHeader("token") String token) {
-    Login.validateToken(token);
+    UserSession session = Login.validateToken(token);
 
-    if (!categoryPersistence.existsById(id))
-      return ResponseEntity.notFound().build();
+    findCategoryToChange(id, session);
 
     categoryPersistence.deleteById(id);
     return ResponseEntity.noContent().build();

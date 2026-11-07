@@ -8,7 +8,7 @@ public class NotFoundError extends ErrorResponseDTOObject {
   }
 
   public NotFoundError(String adicionalMessage) {
-    super((adicionalMessage != "")
+    super((adicionalMessage != null && !adicionalMessage.isEmpty())
         ? NotFoundError.MESSAGE + ' ' + adicionalMessage
         : NotFoundError.MESSAGE);
   }

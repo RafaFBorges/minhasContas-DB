@@ -4,11 +4,13 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.minhascontasdb.dto.Errors.DuplicateDataError;
 import com.minhascontasdb.dto.Errors.ErrorResponseDTO;
+import com.minhascontasdb.dto.Errors.ForbiddenError;
 import com.minhascontasdb.dto.Errors.InvalidAccessError;
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
 import com.minhascontasdb.dto.Errors.NotFoundError;
@@ -19,6 +21,17 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(InvalidAccessError.class)
   public ResponseEntity<ErrorResponseDTO> handleInvalidAccess(InvalidAccessError e) {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getResponse());
+  }
+
+  // Pedido sem o header "token": é falta de autenticação, não erro do servidor
+  @ExceptionHandler(MissingRequestHeaderException.class)
+  public ResponseEntity<ErrorResponseDTO> handleMissingHeader(MissingRequestHeaderException e) {
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new InvalidAccessError("Missing token").getResponse());
+  }
+
+  @ExceptionHandler(ForbiddenError.class)
+  public ResponseEntity<ErrorResponseDTO> handleForbidden(ForbiddenError e) {
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getResponse());
   }
 
   @ExceptionHandler(DuplicateDataError.class)
