@@ -31,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -67,6 +68,9 @@ public class ExpensesTests {
 
   @Autowired
   private UserPersistence userPersistence;
+
+  @Autowired
+  private PasswordEncoder passwordEncoder;
   private User testUser;
 
   @Container
@@ -93,7 +97,7 @@ public class ExpensesTests {
     @BeforeEach
     void setup() throws Exception {
       // Save user to database with known credentials
-      testUser = userPersistence.save(new User("Test User", "test@test.com", "password", "testuser"));
+      testUser = userPersistence.save(new User("Test User", "test@test.com", passwordEncoder.encode("password"), "testuser"));
       
       // Perform login to obtain dynamic session token
       LoginRequestDTO loginRequest = new LoginRequestDTO("testuser", "password");
@@ -210,7 +214,7 @@ public class ExpensesTests {
     @BeforeEach
     void setup() throws Exception {
       // Create and save user to generate token, but KEEP EXPENSES DATABASE EMPTY
-      testUser = userPersistence.save(new User("Empty User", "empty@test.com", "password", "emptyuser"));
+      testUser = userPersistence.save(new User("Empty User", "empty@test.com", passwordEncoder.encode("password"), "emptyuser"));
 
       LoginRequestDTO loginRequest = new LoginRequestDTO("emptyuser", "password");
       String loginJson = objectMapper.writeValueAsString(loginRequest);
@@ -297,7 +301,7 @@ public class ExpensesTests {
       savedExpenses.clear();
 
       // Create user and log in to obtain token
-      testUser = userPersistence.save(new User("Multi User", "multi@test.com", "password", "multiuser"));
+      testUser = userPersistence.save(new User("Multi User", "multi@test.com", passwordEncoder.encode("password"), "multiuser"));
 
       LoginRequestDTO loginRequest = new LoginRequestDTO("multiuser", "password");
       String loginJson = objectMapper.writeValueAsString(loginRequest);
