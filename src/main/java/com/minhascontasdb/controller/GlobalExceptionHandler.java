@@ -1,9 +1,15 @@
 package com.minhascontasdb.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -17,6 +23,7 @@ import com.minhascontasdb.dto.Errors.NotFoundError;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+  private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
   @ExceptionHandler(InvalidAccessError.class)
   public ResponseEntity<ErrorResponseDTO> handleInvalidAccess(InvalidAccessError e) {
@@ -64,8 +71,34 @@ public class GlobalExceptionHandler {
     return ResponseEntity.badRequest().body(new InvalidArgumentsError(e.getMessage()).getResponse());
   }
 
+  // Corpo que não é um JSON válido
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  public ResponseEntity<ErrorResponseDTO> handleUnreadableBody(HttpMessageNotReadableException e) {
+    return ResponseEntity.badRequest().body(new ErrorResponseDTO("Malformed request body"));
+  }
+
+  // Parâmetro de rota ou de query com tipo errado (ex.: /expense/abc)
+  @ExceptionHandler(TypeMismatchException.class)
+  public ResponseEntity<ErrorResponseDTO> handleTypeMismatch(TypeMismatchException e) {
+    return ResponseEntity.badRequest().body(new ErrorResponseDTO("Invalid request parameter"));
+  }
+
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorResponseDTO> handleGeneric(Exception e) {
-    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponseDTO("Error=" + e.getMessage()));
+    // As exceções do próprio Spring MVC (rota inexistente, método ou content-type não suportado...) já
+    // trazem o status certo: não podem virar 500
+    if (e instanceof ErrorResponse frameworkError && frameworkError.getStatusCode().is4xxClientError()) {
+      HttpStatusCode status = frameworkError.getStatusCode();
+      HttpStatus known = HttpStatus.resolve(status.value());
+
+      return ResponseEntity.status(status)
+          .headers(frameworkError.getHeaders())
+          .body(new ErrorResponseDTO(known != null ? known.getReasonPhrase() : "Request error"));
+    }
+
+    // O detalhe fica só no log: a mensagem da exceção pode expor SQL, caminhos ou outros dados internos
+    log.error("Unhandled exception", e);
+
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponseDTO("Internal server error"));
   }
 }
