@@ -20,6 +20,7 @@ import com.minhascontasdb.dto.Errors.ForbiddenError;
 import com.minhascontasdb.dto.Errors.InvalidAccessError;
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
 import com.minhascontasdb.dto.Errors.NotFoundError;
+import com.minhascontasdb.dto.Errors.TooManyRequestsError;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -34,6 +35,13 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(MissingRequestHeaderException.class)
   public ResponseEntity<ErrorResponseDTO> handleMissingHeader(MissingRequestHeaderException e) {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new InvalidAccessError("Missing token").getResponse());
+  }
+
+  @ExceptionHandler(TooManyRequestsError.class)
+  public ResponseEntity<ErrorResponseDTO> handleTooManyRequests(TooManyRequestsError e) {
+    return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+        .header("Retry-After", String.valueOf(e.getRetryAfterSeconds()))
+        .body(e.getResponse());
   }
 
   @ExceptionHandler(ForbiddenError.class)

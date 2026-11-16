@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -164,5 +165,73 @@ public class AuthTests {
       system.setPassword(originalHash);
       userPersistence.save(system);
     }
+  }
+
+  @Test
+  void registerRejectsWeakPasswordsAndDoesNotCreateTheUser() throws Exception {
+    String[] weak = { "Ab1!", "abcdef1!", "ABCDEF1!", "Abcdefg!", "Abcdefg1" };
+
+    for (int i = 0; i < weak.length; i++) {
+      String username = "weak" + i;
+
+      assertEquals(400, register(username, weak[i]), "senha fraca aceita: " + weak[i]);
+      assertFalse(userPersistence.existsByUser(username));
+    }
+  }
+
+  @Test
+  void loginIsBlockedAfterTooManyFailuresEvenWithTheRightPassword() throws Exception {
+    register("lockme", PASSWORD);
+
+    for (int i = 0; i < 5; i++)
+      assertEquals(401, login("lockme", "errada-" + i));
+
+    mockMvc.perform(post("/login")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(Map.of("user", "lockme", "password", PASSWORD))))
+        .andExpect(status().isTooManyRequests())
+        .andExpect(header().exists("Retry-After"))
+        .andExpect(jsonPath("$.message").isNotEmpty());
+
+    // Outra conta não é afetada
+    register("freeuser", PASSWORD);
+    assertEquals(200, login("freeuser", PASSWORD));
+  }
+
+  @Test
+  void blockedLoginIsTheSameForUnknownUsers() throws Exception {
+    // Nome que não existe também é limitado, para o bloqueio não revelar quem está cadastrado
+    for (int i = 0; i < 5; i++)
+      assertEquals(401, login("fantasma", "errada-" + i));
+
+    assertEquals(429, login("fantasma", PASSWORD));
+  }
+
+  @Test
+  void successfulLoginResetsTheFailureCounter() throws Exception {
+    register("resetme", PASSWORD);
+
+    for (int round = 0; round < 3; round++) {
+      for (int i = 0; i < 4; i++)
+        assertEquals(401, login("resetme", "errada-" + i));
+
+      // 4 erros + o acerto, repetido 3 vezes, nunca chega a 5 seguidos
+      assertEquals(200, login("resetme", PASSWORD));
+    }
+  }
+
+  // Contas "caseacct" e "CASEACCT" são diferentes: logar numa não pode zerar o bloqueio da outra
+  @Test
+  void loginOnAnAccountWithADifferentCaseDoesNotResetTheLockout() throws Exception {
+    register("caseacct", PASSWORD);
+    register("CASEACCT", PASSWORD);
+
+    for (int i = 0; i < 4; i++)
+      assertEquals(401, login("caseacct", "errada-" + i));
+
+    assertEquals(200, login("CASEACCT", PASSWORD));
+    assertEquals(401, login("caseacct", "errada-4"));
+
+    assertEquals(429, login("caseacct", PASSWORD));
   }
 }

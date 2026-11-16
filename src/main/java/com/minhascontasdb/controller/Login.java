@@ -1,8 +1,8 @@
 package com.minhascontasdb.controller;
 
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,24 +15,31 @@ import com.minhascontasdb.dto.LoginRequestDTO;
 import com.minhascontasdb.dto.LoginResponseDTO;
 import com.minhascontasdb.dto.UserSession;
 import com.minhascontasdb.dto.Errors.InvalidAccessError;
+import com.minhascontasdb.dto.Errors.TooManyRequestsError;
 import com.minhascontasdb.inicialization.UserInitialDataEnsurer;
 import com.minhascontasdb.persistence.UserPersistence;
+import com.minhascontasdb.service.LoginRateLimiter;
 import com.minhascontasdb.service.User;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @CrossOrigin(origins = "*")
 public class Login {
-  private static final Map<String, UserSession> userSessions = new HashMap<>();
+  // Várias requisições registram e removem sessões ao mesmo tempo, então o mapa precisa ser thread-safe
+  private static final Map<String, UserSession> userSessions = new ConcurrentHashMap<>();
 
   private final UserPersistence userRepository;
   private final PasswordEncoder passwordEncoder;
+  private final LoginRateLimiter rateLimiter;
   // Hash usado quando o usuário não existe, para o tempo de resposta não revelar quem está cadastrado
   private final String dummyHash;
 
   // Injeção de dependência via Construtor
-  public Login(UserPersistence userRepository, PasswordEncoder passwordEncoder) {
+  public Login(UserPersistence userRepository, PasswordEncoder passwordEncoder, LoginRateLimiter rateLimiter) {
     this.userRepository = userRepository;
     this.passwordEncoder = passwordEncoder;
+    this.rateLimiter = rateLimiter;
     this.dummyHash = passwordEncoder.encode("dummy-password-for-timing");
   }
 
@@ -67,9 +74,17 @@ public class Login {
   }
 
   @PostMapping("/login")
-  public ResponseEntity<LoginResponseDTO> tryLogin(@RequestBody LoginRequestDTO loginData) {
+  public ResponseEntity<LoginResponseDTO> tryLogin(@RequestBody LoginRequestDTO loginData, HttpServletRequest request) {
     if (loginData.getUser() == null || loginData.getPassword() == null)
       return ResponseEntity.status(401).build();
+
+    // A tentativa é reservada antes de qualquer consulta ou hash (e devolvida se o login der certo). Assim
+    // requisições paralelas não passam todas pela checagem enquanto o hash é calculado.
+    // O IP só serve ao limite por IP, que está desligado: atrás do proxy ele não é confiável (veja LoginRateLimiter)
+    String clientIp = request.getRemoteAddr();
+    long retryAfter = rateLimiter.reserveAttempt(loginData.getUser(), clientIp);
+    if (0 < retryAfter)
+      throw new TooManyRequestsError(retryAfter);
 
     User user = userRepository.findByUser(loginData.getUser()).orElse(null);
     boolean passwordMatches = passwordMatches(loginData.getPassword(), user != null ? user.getPassword() : this.dummyHash);
@@ -78,6 +93,8 @@ public class Login {
     boolean isSystemUser = user != null && UserInitialDataEnsurer.SYSTEM_USERNAME.equals(user.getUser());
 
     if (user != null && passwordMatches && !isSystemUser) {
+      rateLimiter.releaseOnSuccess(loginData.getUser(), clientIp);
+
       UserSession record = UserSession.create(user.getId(), user.getUser(), user.getName());
       Login.registerSession(record);
 

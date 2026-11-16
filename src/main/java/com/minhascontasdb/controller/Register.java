@@ -16,6 +16,7 @@ import com.minhascontasdb.dto.Errors.DuplicateDataError;
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
 import com.minhascontasdb.inicialization.UserInitialDataEnsurer;
 import com.minhascontasdb.persistence.UserPersistence;
+import com.minhascontasdb.service.PasswordPolicy;
 import com.minhascontasdb.service.User;
 
 @RestController
@@ -42,6 +43,9 @@ public class Register {
       throw new InvalidArgumentsError("Invalid password");
     if (MAX_PASSWORD_BYTES < password.getBytes(StandardCharsets.UTF_8).length)
       throw new InvalidArgumentsError("Password too long");
+    // Só no cadastro: contas antigas com senhas fracas continuam conseguindo entrar
+    if (!PasswordPolicy.isStrong(password))
+      throw new InvalidArgumentsError("Weak password");
 
     if (userPersistence.existsByEmail(userData.getEmail()))
       throw new DuplicateDataError("Email já cadastrado.");
