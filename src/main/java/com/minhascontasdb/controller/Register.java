@@ -1,7 +1,5 @@
 package com.minhascontasdb.controller;
 
-import java.nio.charset.StandardCharsets;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -23,10 +21,6 @@ import com.minhascontasdb.service.User;
 @RequestMapping("/register")
 @CrossOrigin(origins = "*")
 public class Register {
-
-  // O BCrypt só considera os primeiros 72 bytes da senha
-  public static final int MAX_PASSWORD_BYTES = 72;
-
   private final UserPersistence userPersistence;
   private final PasswordEncoder passwordEncoder;
 
@@ -41,7 +35,7 @@ public class Register {
     String password = userData.getPassword();
     if (password == null || password.isBlank())
       throw new InvalidArgumentsError("Invalid password");
-    if (MAX_PASSWORD_BYTES < password.getBytes(StandardCharsets.UTF_8).length)
+    if (PasswordPolicy.isTooLong(password))
       throw new InvalidArgumentsError("Password too long");
     // Só no cadastro: contas antigas com senhas fracas continuam conseguindo entrar
     if (!PasswordPolicy.isStrong(password))
@@ -51,7 +45,7 @@ public class Register {
       throw new DuplicateDataError("Email já cadastrado.");
 
     // O nome da conta de serviço é reservado, em qualquer combinação de maiúsculas e minúsculas
-    if (UserInitialDataEnsurer.SYSTEM_USERNAME.equalsIgnoreCase(userData.getUser()))
+    if (UserInitialDataEnsurer.isReserved(userData.getUser()))
       throw new DuplicateDataError("Nome de usuário já cadastrado.");
 
     if (userPersistence.existsByUser(userData.getUser()))

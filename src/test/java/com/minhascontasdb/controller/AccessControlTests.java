@@ -92,7 +92,7 @@ public class AccessControlTests {
         .andExpect(status().isOk())
         .andReturn().getResponse().getContentAsString();
 
-    return new Account(user, JsonPath.read(response, "$.token"));
+    return new Account(user, JsonPath.read(response, "$.accessToken"));
   }
 
   private Expense newExpense(Account owner) {
@@ -110,7 +110,7 @@ public class AccessControlTests {
   }
 
   private ResultActions call(MockHttpServletRequestBuilder request, Account as, Object body) throws Exception {
-    request = request.header("token", as.token());
+    request = request.header("Authorization", "Bearer " + as.token());
 
     if (body != null)
       request = request.contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(body));
@@ -327,6 +327,6 @@ public class AccessControlTests {
   @Test
   void missingOrInvalidTokenIsUnauthorized() throws Exception {
     mockMvc.perform(get("/expense/user/1")).andExpect(status().isUnauthorized());
-    mockMvc.perform(get("/category/user/1").header("token", "invalido")).andExpect(status().isUnauthorized());
+    mockMvc.perform(get("/category/user/1").header("Authorization", "Bearer invalido")).andExpect(status().isUnauthorized());
   }
 }

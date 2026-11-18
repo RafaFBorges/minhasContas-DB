@@ -9,8 +9,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.ErrorResponse;
-import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -29,12 +30,6 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(InvalidAccessError.class)
   public ResponseEntity<ErrorResponseDTO> handleInvalidAccess(InvalidAccessError e) {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getResponse());
-  }
-
-  // Pedido sem o header "token": é falta de autenticação, não erro do servidor
-  @ExceptionHandler(MissingRequestHeaderException.class)
-  public ResponseEntity<ErrorResponseDTO> handleMissingHeader(MissingRequestHeaderException e) {
-    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new InvalidAccessError("Missing token").getResponse());
   }
 
   @ExceptionHandler(TooManyRequestsError.class)
@@ -89,6 +84,22 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(TypeMismatchException.class)
   public ResponseEntity<ErrorResponseDTO> handleTypeMismatch(TypeMismatchException e) {
     return ResponseEntity.badRequest().body(new ErrorResponseDTO("Invalid request parameter"));
+  }
+
+  // Regra de papel/acesso lançada dentro de um controller (@PreAuthorize, hasRole...): o catch-all abaixo a transformaria em 500.
+  // Mesmo corpo que o SecurityConfig devolve para quem é barrado antes do controller. Ao escrever a primeira regra de papel,
+  // conferir aqui (e em SecurityExceptionHandlingTests) o comportamento desejado
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<ErrorResponseDTO> handleAccessDenied(AccessDeniedException e) {
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ForbiddenError().getResponse());
+  }
+
+  @ExceptionHandler(AuthenticationException.class)
+  public ResponseEntity<ErrorResponseDTO> handleAuthentication(AuthenticationException e) {
+    // O normal é o filtro do Spring Security responder antes (com error="invalid_token" quando há token recusado); isto é só o caminho
+    // de quem lança AuthenticationException dentro de um controller
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).header("WWW-Authenticate", "Bearer")
+        .body(new InvalidAccessError().getResponse());
   }
 
   @ExceptionHandler(Exception.class)

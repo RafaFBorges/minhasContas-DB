@@ -9,11 +9,10 @@ import java.util.stream.Collectors;
 
 import com.minhascontasdb.dto.ExpenseRequestDTO;
 import com.minhascontasdb.dto.ExpenseResponseDTO;
-import com.minhascontasdb.dto.UserSession;
+import com.minhascontasdb.dto.AuthUser;
 import com.minhascontasdb.dto.Errors.InvalidArgumentsError;
 import com.minhascontasdb.dto.Errors.NotFoundError;
 import com.minhascontasdb.persistence.CategoryPersistence;
-import org.springframework.web.bind.annotation.RequestHeader;
 import com.minhascontasdb.persistence.ExpensePersistence;
 import com.minhascontasdb.persistence.UserPersistence;
 import com.minhascontasdb.service.AccessPolicy;
@@ -22,6 +21,7 @@ import com.minhascontasdb.service.Expense;
 import com.minhascontasdb.service.User;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -53,7 +53,7 @@ public class ExpensesController {
   }
 
   // Despesa de outro usuário não existe para quem pede
-  private Expense findOwnedExpense(Long id, UserSession session) {
+  private Expense findOwnedExpense(Long id, AuthUser session) {
     return expensePersistence.findById(id)
         .filter(expense -> AccessPolicy.isOwnedBy(expense.getOwner(), session))
         .orElseThrow(() -> new NotFoundError("Expense not found"));
@@ -61,7 +61,7 @@ public class ExpensesController {
 
   // Categoria de outro usuário não existe para quem pede, igual a um id inexistente: qualquer id
   // que não seja visível derruba o pedido inteiro, sem alterar nada
-  private List<Category> findReadableCategories(List<Long> ids, UserSession session) {
+  private List<Category> findReadableCategories(List<Long> ids, AuthUser session) {
     Set<Long> requested = new HashSet<>(ids);
 
     List<Category> readable = categoryRepository.findAllById(requested).stream()
@@ -77,9 +77,7 @@ public class ExpensesController {
   @GetMapping("/user/{id}")
   @Transactional(readOnly = true)
   public ResponseEntity<List<ExpenseResponseDTO>> getExpense(@PathVariable Long id,
-      @RequestHeader("token") String token) {
-    UserSession session = Login.validateToken(token);
-
+      @AuthenticationPrincipal AuthUser session) {
     if (!session.id().equals(id))
       throw new NotFoundError("User not found");
 
@@ -94,17 +92,13 @@ public class ExpensesController {
   @GetMapping("/{id}")
   @Transactional(readOnly = true)
   public ResponseEntity<ExpenseResponseDTO> getExpenseById(@PathVariable Long id,
-      @RequestHeader("token") String token) {
-    UserSession session = Login.validateToken(token);
-
+      @AuthenticationPrincipal AuthUser session) {
     return ResponseEntity.ok(new ExpenseResponseDTO(findOwnedExpense(id, session)));
   }
 
   @PostMapping
   public ResponseEntity<ExpenseResponseDTO> createExpense(@RequestBody ExpenseRequestDTO dto,
-      @RequestHeader("token") String token) {
-    UserSession session = Login.validateToken(token);
-
+      @AuthenticationPrincipal AuthUser session) {
     if (!dto.isValidOwner())
       throw new InvalidArgumentsError("Invalid Owner");
 
@@ -137,9 +131,7 @@ public class ExpensesController {
 
   @PutMapping("/{id}")
   public ResponseEntity<ExpenseResponseDTO> updateExpense(@PathVariable Long id, @RequestBody ExpenseRequestDTO dto,
-      @RequestHeader("token") String token) {
-    UserSession session = Login.validateToken(token);
-
+      @AuthenticationPrincipal AuthUser session) {
     if (!dto.isValidValue())
       throw new InvalidArgumentsError("Invalid Value");
 
@@ -169,9 +161,7 @@ public class ExpensesController {
   }
 
   @DeleteMapping("/{id}")
-  public ResponseEntity<Void> deleteExpense(@PathVariable Long id, @RequestHeader("token") String token) {
-    UserSession session = Login.validateToken(token);
-
+  public ResponseEntity<Void> deleteExpense(@PathVariable Long id, @AuthenticationPrincipal AuthUser session) {
     findOwnedExpense(id, session);
 
     expensePersistence.deleteById(id);

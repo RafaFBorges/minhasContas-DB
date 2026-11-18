@@ -4,6 +4,7 @@ import java.util.Map;
 
 import com.minhascontasdb.inicialization.UserInitialDataEnsurer;
 import com.minhascontasdb.persistence.UserPersistence;
+import com.minhascontasdb.service.PasswordPolicy;
 import com.minhascontasdb.service.User;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -88,14 +89,16 @@ public class AuthTests {
   }
 
   @Test
-  void loginWithCorrectPasswordReturnsToken() throws Exception {
+  void loginWithCorrectPasswordReturnsTokens() throws Exception {
     register("goodlogin", PASSWORD);
 
     mockMvc.perform(post("/login")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(Map.of("user", "goodlogin", "password", PASSWORD))))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.token").isNotEmpty());
+        .andExpect(jsonPath("$.accessToken").isNotEmpty())
+        .andExpect(jsonPath("$.refreshToken").isNotEmpty())
+        .andExpect(jsonPath("$.role").value("USER"));
   }
 
   @Test
@@ -121,7 +124,7 @@ public class AuthTests {
   @Test
   void registerRejectsBlankAndTooLongPasswords() throws Exception {
     assertEquals(400, register("blankpass", "   "));
-    assertEquals(400, register("longpass", "a".repeat(Register.MAX_PASSWORD_BYTES + 1)));
+    assertEquals(400, register("longpass", "a".repeat(PasswordPolicy.MAX_BYTES + 1)));
     assertFalse(userPersistence.existsByUser("blankpass"));
     assertFalse(userPersistence.existsByUser("longpass"));
   }
@@ -130,7 +133,7 @@ public class AuthTests {
   void loginWithTooLongPasswordIsUnauthorized() throws Exception {
     register("shortpass", PASSWORD);
 
-    assertEquals(401, login("shortpass", "a".repeat(Register.MAX_PASSWORD_BYTES + 1)));
+    assertEquals(401, login("shortpass", "a".repeat(PasswordPolicy.MAX_BYTES + 1)));
   }
 
   @Test

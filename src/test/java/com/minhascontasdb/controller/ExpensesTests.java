@@ -113,7 +113,7 @@ public class ExpensesTests {
 
       // Extract token from response JSON
       LoginResponseDTO loginResponse = objectMapper.readValue(response, LoginResponseDTO.class);
-      this.authToken = loginResponse.getToken();
+      this.authToken = loginResponse.accessToken();
 
       // Save initial expense
       Expense expense = new Expense(DEFAULT_VALUE, FIXED_INSTANT);
@@ -125,7 +125,7 @@ public class ExpensesTests {
     @Test
     void getExpenseId_ShouldReturnRightExpenseWithID() throws Exception {
       mockMvc.perform(get("/expense/{id}", this.savedExpense.getId())
-          .header("token", this.authToken))
+          .header("Authorization", "Bearer " + this.authToken))
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
@@ -136,7 +136,7 @@ public class ExpensesTests {
     @Test
     void getExpense_ShouldReturnAllExpenses() throws Exception {
       mockMvc.perform(get("/expense/user/{id}", testUser.getId())
-          .header("token", this.authToken))
+          .header("Authorization", "Bearer " + this.authToken))
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$", hasSize(1)))
@@ -153,7 +153,7 @@ public class ExpensesTests {
       String requestJson = objectMapper.writeValueAsString(requestDTO);
 
       mockMvc.perform(post("/expense")
-          .header("token", this.authToken)
+          .header("Authorization", "Bearer " + this.authToken)
           .contentType(MediaType.APPLICATION_JSON)
           .content(requestJson))
           .andExpect(status().isOk())
@@ -167,7 +167,7 @@ public class ExpensesTests {
     void putExpense_ShouldEditTheValue() throws Exception {
       // Verificar que o valor esta no banco de dados
       mockMvc.perform(get("/expense/{id}", this.savedExpense.getId())
-          .header("token", this.authToken))
+          .header("Authorization", "Bearer " + this.authToken))
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE)))
@@ -177,7 +177,7 @@ public class ExpensesTests {
       String requestJson = objectMapper.writeValueAsString(requestDTO);
 
       mockMvc.perform(put("/expense/{id}", this.savedExpense.getId())
-          .header("token", this.authToken)
+          .header("Authorization", "Bearer " + this.authToken)
           .contentType(MediaType.APPLICATION_JSON)
           .content(requestJson))
           .andExpect(status().isOk())
@@ -186,7 +186,7 @@ public class ExpensesTests {
           .andExpect(jsonPath("$.date", is(requestDTO.getDate().toString())));
 
       mockMvc.perform(get("/expense/{id}", this.savedExpense.getId())
-          .header("token", this.authToken))
+          .header("Authorization", "Bearer " + this.authToken))
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$.value", is(DEFAULT_VALUE * 2)))
@@ -197,11 +197,11 @@ public class ExpensesTests {
     @Test
     void deleteExpense_ShouldReturnNoContentAndRemoveExpense() throws Exception {
       mockMvc.perform(delete("/expense/{id}", savedExpense.getId())
-          .header("token", this.authToken))
+          .header("Authorization", "Bearer " + this.authToken))
           .andExpect(status().isNoContent());
 
       mockMvc.perform(get("/expense/{id}", savedExpense.getId())
-          .header("token", this.authToken))
+          .header("Authorization", "Bearer " + this.authToken))
           .andExpect(status().isNotFound());
     }
   }
@@ -228,14 +228,14 @@ public class ExpensesTests {
             .getContentAsString();
 
       LoginResponseDTO loginResponse = objectMapper.readValue(response, LoginResponseDTO.class);
-      this.authToken = loginResponse.getToken();
+      this.authToken = loginResponse.accessToken();
     }
 
     // Teste para o endpoint GET /expense/{id}
     @Test
     void getExpenseId_ShouldReturn404Error() throws Exception {
       mockMvc.perform(get("/expense/1")
-          .header("token", this.authToken))
+          .header("Authorization", "Bearer " + this.authToken))
           .andExpect(status().isNotFound());
     }
 
@@ -243,7 +243,7 @@ public class ExpensesTests {
     @Test
     void getExpense_ShouldReturnEmptyList() throws Exception {
       mockMvc.perform(get("/expense/user/{id}", this.testUser.getId())
-          .header("token", this.authToken))
+          .header("Authorization", "Bearer " + this.authToken))
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$", hasSize(0)));
@@ -258,7 +258,7 @@ public class ExpensesTests {
       String requestJson = objectMapper.writeValueAsString(requestDTO);
 
       mockMvc.perform(post("/expense")
-          .header("token", this.authToken)
+          .header("Authorization", "Bearer " + this.authToken)
           .contentType(MediaType.APPLICATION_JSON)
           .content(requestJson))
           .andExpect(status().isOk())
@@ -274,7 +274,7 @@ public class ExpensesTests {
       String requestJson = objectMapper.writeValueAsString(requestDTO);
 
       mockMvc.perform(put("/expense/1")
-          .header("token", this.authToken)
+          .header("Authorization", "Bearer " + this.authToken)
           .contentType(MediaType.APPLICATION_JSON)
           .content(requestJson))
           .andExpect(status().isNotFound());
@@ -284,7 +284,7 @@ public class ExpensesTests {
     @Test
     void deleteExpense_ShouldReturnNoContent() throws Exception {
       mockMvc.perform(delete("/expense/1")
-          .header("token", this.authToken))
+          .header("Authorization", "Bearer " + this.authToken))
           .andExpect(status().isNotFound());
     }
   }
@@ -315,7 +315,7 @@ public class ExpensesTests {
             .getContentAsString();
 
       LoginResponseDTO loginResponse = objectMapper.readValue(response, LoginResponseDTO.class);
-      this.authToken = loginResponse.getToken();
+      this.authToken = loginResponse.accessToken();
 
       // Create expenses associated with the user
       for (int i = 0; i < this.LIST_COUNT; i++) {
@@ -330,7 +330,7 @@ public class ExpensesTests {
     void getExpenseId_ShouldReturnGetEachData() throws Exception {
       for (Expense expense : savedExpenses)
         mockMvc.perform(get("/expense/{id}", expense.getId())
-            .header("token", this.authToken))
+            .header("Authorization", "Bearer " + this.authToken))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.value", is(expense.getValue())))
@@ -341,7 +341,7 @@ public class ExpensesTests {
     @Test
     void getExpense_ShouldReturnAllExpenses() throws Exception {
       mockMvc.perform(get("/expense/user/{id}", this.testUser.getId())
-          .header("token", this.authToken))
+          .header("Authorization", "Bearer " + this.authToken))
           .andExpect(status().isOk())
           .andExpect(content().contentType(MediaType.APPLICATION_JSON))
           .andExpect(jsonPath("$", hasSize(this.LIST_COUNT)))
@@ -362,7 +362,7 @@ public class ExpensesTests {
       String requestJson = objectMapper.writeValueAsString(requestDTO);
 
       mockMvc.perform(post("/expense")
-          .header("token", this.authToken)
+          .header("Authorization", "Bearer " + this.authToken)
           .contentType(MediaType.APPLICATION_JSON)
           .content(requestJson))
           .andExpect(status().isOk())
@@ -379,7 +379,7 @@ public class ExpensesTests {
 
       for (Expense expense : savedExpenses)
         mockMvc.perform(get("/expense/{id}", expense.getId())
-            .header("token", this.authToken))
+            .header("Authorization", "Bearer " + this.authToken))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.value", is(expense.getValue())))
@@ -390,7 +390,7 @@ public class ExpensesTests {
       savedExpenses.get(UPDATE_INDEX).setValue(requestDTO.getValue(), requestDTO.getDate());
 
       mockMvc.perform(put("/expense/{id}", savedExpenses.get(UPDATE_INDEX).getId())
-          .header("token", this.authToken)
+          .header("Authorization", "Bearer " + this.authToken)
           .contentType(MediaType.APPLICATION_JSON)
           .content(requestJson))
           .andExpect(status().isOk())
@@ -400,7 +400,7 @@ public class ExpensesTests {
 
       for (Expense expense : savedExpenses)
         mockMvc.perform(get("/expense/{id}", expense.getId())
-            .header("token", this.authToken))
+            .header("Authorization", "Bearer " + this.authToken))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.value", is(expense.getValue())))
@@ -413,17 +413,17 @@ public class ExpensesTests {
       final Integer DELETE_INDEX = 1;
 
       mockMvc.perform(delete("/expense/{id}", savedExpenses.get(DELETE_INDEX).getId())
-          .header("token", this.authToken))
+          .header("Authorization", "Bearer " + this.authToken))
           .andExpect(status().isNoContent());
 
       mockMvc.perform(get("/expense/{id}", savedExpenses.get(DELETE_INDEX).getId())
-          .header("token", this.authToken))
+          .header("Authorization", "Bearer " + this.authToken))
           .andExpect(status().isNotFound());
 
       savedExpenses.remove(savedExpenses.get(DELETE_INDEX));
       for (Expense expense : savedExpenses)
         mockMvc.perform(get("/expense/{id}", expense.getId())
-          .header("token", this.authToken))
+          .header("Authorization", "Bearer " + this.authToken))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.value", is(expense.getValue())))

@@ -17,6 +17,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.minhascontasdb.dto.Errors.ErrorResponseDTO;
+import com.minhascontasdb.service.JwtService;
+import com.minhascontasdb.service.User;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,14 +36,25 @@ public class ErrorHandlingTests {
   @Autowired
   private MockMvc mockMvc;
 
+  @Autowired
+  private JwtService jwtService;
+
   @Container
   @ServiceConnection
   static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15");
 
+  // Access token válido sem precisar de usuário no banco: as rotas abaixo falham antes de consultar dados
+  private String bearer() {
+    User user = new User("Erro", "erro@test.com", "", "erro");
+    user.setId(1L);
+
+    return "Bearer " + jwtService.issue(user).value();
+  }
+
   // Erros do próprio Spring MVC mantêm o status certo (antes viravam 500 no handler genérico)
   @Test
   void unknownRouteIsNotFound() throws Exception {
-    mockMvc.perform(get("/rota-que-nao-existe"))
+    mockMvc.perform(get("/rota-que-nao-existe").header("Authorization", bearer()))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.message").value("Not Found"));
   }
@@ -67,7 +80,7 @@ public class ErrorHandlingTests {
 
   @Test
   void pathParameterWithWrongTypeIsBadRequest() throws Exception {
-    mockMvc.perform(get("/expense/abc").header("token", "qualquer"))
+    mockMvc.perform(get("/expense/abc").header("Authorization", bearer()))
         .andExpect(status().isBadRequest())
         .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
   }

@@ -72,7 +72,7 @@ public class TransportSecurityTests {
         .andExpect(status().isUnauthorized())
         .andExpect(header().string(HstsFilter.HEADER, HstsFilter.VALUE));
 
-    // Rota autenticada sem o header "token"
+    // Rota autenticada sem o cabeçalho Authorization
     mockMvc.perform(get("/expense/1").secure(true))
         .andExpect(status().isUnauthorized())
         .andExpect(header().string(HstsFilter.HEADER, HstsFilter.VALUE));

@@ -1,6 +1,7 @@
 package com.minhascontasdb.inicialization;
 
 import com.minhascontasdb.persistence.UserPersistence;
+import com.minhascontasdb.service.Role;
 import com.minhascontasdb.service.User;
 
 import org.springframework.boot.CommandLineRunner;
@@ -19,6 +20,11 @@ public class UserInitialDataEnsurer implements CommandLineRunner {
   private final UserPersistence userPersistence;
   private final PasswordEncoder passwordEncoder;
   public static final String SYSTEM_USERNAME = "System";
+
+  // O nome da conta de serviço é reservado em qualquer combinação de maiúsculas e minúsculas (cadastro e Admin inicial)
+  public static boolean isReserved(String username) {
+    return SYSTEM_USERNAME.equalsIgnoreCase(username);
+  }
 
   public UserInitialDataEnsurer(UserPersistence userPersistence, PasswordEncoder passwordEncoder) {
     this.userPersistence = userPersistence;
@@ -42,6 +48,7 @@ public class UserInitialDataEnsurer implements CommandLineRunner {
     boolean isNew = systemUser.getId() == null;
 
     // A cada subida a senha é trocada por outra aleatória, inclusive em bancos antigos onde era "system"
+    systemUser.setRole(Role.SYSTEM);
     systemUser.setPassword(randomHash());
     userPersistence.save(systemUser);
     System.out.println(isNew ? "System user created" : "System user password renewed");
