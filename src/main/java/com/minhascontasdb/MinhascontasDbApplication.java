@@ -12,7 +12,7 @@ public class MinhascontasDbApplication {
 
     System.out.println("Loading from .env");
     dotenv.entries().forEach(entry -> {
-      System.out.println("Loaded from .env: " + entry.getKey() + "=" + entry.getValue());
+      System.out.println("Loaded from .env: " + entry.getKey());
       System.setProperty(entry.getKey(), entry.getValue());
     });
 

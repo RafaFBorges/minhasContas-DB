@@ -50,7 +50,7 @@ public class Category {
     if (this.name == null || this.name.isEmpty())
       strMessage = "invalid name value";
 
-    if (strMessage != "")
+    if (!strMessage.isEmpty())
       throw new InvalidArgumentsError(strMessage);
   }
 

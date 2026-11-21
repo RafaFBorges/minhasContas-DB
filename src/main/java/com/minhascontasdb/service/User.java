@@ -7,6 +7,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -28,6 +30,10 @@ public class User {
 
   @Column(name = "username", unique = true)
   private String user;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "role", nullable = false)
+  private Role role = Role.USER;
 
   @OneToMany(mappedBy = "owner")
   @JsonIgnore
@@ -93,6 +99,21 @@ public class User {
 
   public void setUser(String newUser) {
     this.user = newUser;
+  }
+
+  public Role getRole() {
+    return this.role;
+  }
+
+  public void setRole(Role role) {
+    this.role = role;
+  }
+
+  // Única definição de "conta System" (dona dos dados compartilhados, sem login nem refresh). Vem do papel, que a
+  // inicialização reafirma a cada subida; não compare o username em outros lugares
+  @JsonIgnore
+  public boolean isSystem() {
+    return this.role == Role.SYSTEM;
   }
 
   public List<Expense> getExpenses() {

@@ -64,6 +64,17 @@ Minhas Contas Web Backend *v0.0.1*.
   3. Instale Docker neste [link](https://www.docker.com/products/docker-desktop)
   4. Instale PostgreSQL neste [link](https://www.postgresql.org/download/)
 
+- Variáveis de ambiente (arquivo `.env` na raiz, ignorado pelo git, ou as variáveis do serviço na hospedagem):
+
+| Variável | Obrigatória | Para quê |
+| --- | --- | --- |
+| `DATASOURCE_URL`, `DATASOURCE_USERNAME`, `DATASOURCE_PASSWORD` | sim | Conexão com o PostgreSQL |
+| `JWT_SECRET` | sim | Chave que assina os access tokens (JWT). Mínimo 32 bytes e não pode ser repetitiva (menos de 10 caracteres distintos); sem isso a API não sobe. Gere com `openssl rand -base64 48`. Trocá-la invalida só os access tokens em circulação (até 15 min); os refresh tokens ficam no banco e continuam emitindo access tokens novos. Trocá-la também faz falhar (401) um refresh repetido que estava dentro da tolerância de 10 s, porque o sucessor é derivado do segredo; o cliente precisa fazer login de novo. Para encerrar todas as sessões depois de um vazamento, apague as linhas de `refresh_tokens` (`delete from refresh_tokens;`) além de trocar o segredo |
+| `ADMIN_USER`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | não | Primeiro Admin, criado na subida só se ainda não existir nenhum. Defina as três ou nenhuma. A senha segue a política do cadastro (8+ caracteres, maiúscula, minúscula, número e especial). Só valem no primeiro boot: depois que existe um Admin, **remova as três do ambiente**. Se ficarem e a linha do Admin for apagada, o próximo restart recria a conta com a senha que está na variável. Se o Admin for rebaixado e as variáveis ficarem, a API sobe normalmente (só avisa no log) e nada é criado. Mudar a variável não altera a conta existente. Prefira um `ADMIN_USER` que não seja óbvio: o login é limitado por usuário (5 erros a cada 15 min), então um nome previsível pode ser bloqueado por terceiros |
+| `SHOW_SQL` | não | `true` mostra o SQL no log (pode conter dados de usuários) |
+
+- Autenticação: `POST /login` devolve um access token (JWT, 15 min) e um refresh token (7 dias, de uso único). As rotas protegidas exigem `Authorization: Bearer <accessToken>`. `POST /refresh` e `POST /logout` recebem `{"refreshToken": "..."}`; o refresh troca o par (guarde sempre o novo) e o logout encerra a sessão. Repetir um refresh token já trocado é aceito por `jwt.refresh-reuse-grace-seconds` (10 s, para respostas perdidas ou pedidos simultâneos) e devolve o mesmo sucessor da primeira troca, sem criar outra sessão (limite assumido: nessa janela quem copiou o token também recebe o sucessor; só vincular o replay a IP/user agent, no proxy do Web, fecharia isso); depois disso é tratado como cópia do token e encerra todas as sessões do usuário. Cada login forma uma cadeia que vale no máximo `jwt.refresh-chain-max-days` (30) no total, mesmo sendo usada todo dia; o logout encerra a cadeia inteira. Cada usuário tem no máximo `jwt.max-sessions-per-user` (10) sessões: um novo login além disso encerra as menos usadas há mais tempo (a sessão renovada todo dia fica, a parada sai). Tokens vencidos (e os já trocados há mais de 1 dia) são apagados por uma tarefa a cada hora. **Mudança de contrato:** o login deixou de devolver `token` (agora `accessToken` e `refreshToken`) e o header `token` não é mais aceito; publique a API junto com o Web que a consome. Papéis: `SYSTEM > ADMIN > SUPPORT > USER`.
+
 - Construindo dependências do projeto (no root):
 
 ```bash
@@ -108,6 +119,15 @@ mvn clean install
 ```bash
 http://localhost:8080
 ```
+
+### Migrações do banco:
+
+O schema é versionado com Flyway em `src/main/resources/db/migration` (`V1__baseline.sql`, `V2__....sql`, ...).
+
+  - Para alterar uma entidade (nova coluna, tabela...), crie um novo arquivo `V<n>__descricao.sql`. Nunca edite um já aplicado.
+  - O Hibernate só valida (`ddl-auto=validate`): se a entidade divergir do banco, a aplicação não sobe.
+  - Banco vazio (sandbox, testes): recebe todas as migrações. Banco que já tinha tabelas: é marcado como V1 sem executá-lo.
+  - Recriar o sandbox do zero: `docker compose down -v && docker compose up --build`.
 
 <!-- Tecnologias -->
 <div id="tecnologias-utilizadas"/>
