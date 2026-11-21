@@ -8,7 +8,7 @@ public class DuplicateDataError extends ErrorResponseDTOObject {
   }
 
   public DuplicateDataError(String adicionalMessage) {
-    super((adicionalMessage != "")
+    super((adicionalMessage != null && !adicionalMessage.isEmpty())
         ? DuplicateDataError.MESSAGE + ' ' + adicionalMessage
         : DuplicateDataError.MESSAGE);
   }

@@ -8,7 +8,7 @@ public class InvalidAccessError extends ErrorResponseDTOObject {
   }
 
   public InvalidAccessError(String adicionalMessage) {
-    super((adicionalMessage != "")
+    super((adicionalMessage != null && !adicionalMessage.isEmpty())
         ? InvalidAccessError.MESSAGE + ' ' + adicionalMessage
         : InvalidAccessError.MESSAGE);
   }
