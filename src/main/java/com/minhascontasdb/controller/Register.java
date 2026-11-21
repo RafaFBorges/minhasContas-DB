@@ -1,8 +1,8 @@
 package com.minhascontasdb.controller;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,7 +19,6 @@ import com.minhascontasdb.service.User;
 
 @RestController
 @RequestMapping("/register")
-@CrossOrigin(origins = "*")
 public class Register {
   private final UserPersistence userPersistence;
   private final PasswordEncoder passwordEncoder;
@@ -41,6 +40,12 @@ public class Register {
     if (!PasswordPolicy.isStrong(password))
       throw new InvalidArgumentsError("Weak password");
 
+    // Campos obrigatórios: sem isto a ausência só aparecia como erro do banco, na hora de salvar
+    if (isBlank(userData.getUser()))
+      throw new InvalidArgumentsError("Invalid user");
+    if (isBlank(userData.getEmail()))
+      throw new InvalidArgumentsError("Invalid email");
+
     if (userPersistence.existsByEmail(userData.getEmail()))
       throw new DuplicateDataError("Email já cadastrado.");
 
@@ -54,8 +59,19 @@ public class Register {
     // O hash (caro de calcular) só é feito depois de todas as validações baratas
     User newUser = new User(userData.getName(), userData.getEmail(), passwordEncoder.encode(password), userData.getUser());
 
-    User savedUser = userPersistence.save(newUser);
+    User savedUser;
+    try {
+      savedUser = userPersistence.save(newUser);
+    } catch (DataIntegrityViolationException e) {
+      // Dois cadastros simultâneos passam juntos pelas checagens acima e o segundo bate na constraint unique do banco.
+      // Isso é duplicidade (409), e o texto do banco não pode chegar ao cliente
+      throw new DuplicateDataError("Usuário ou email já cadastrado.");
+    }
 
     return ResponseEntity.ok(new RegisterResponseDTO(savedUser != null));
+  }
+
+  private static boolean isBlank(String value) {
+    return value == null || value.isBlank();
   }
 }

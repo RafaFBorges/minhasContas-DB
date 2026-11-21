@@ -186,6 +186,32 @@ public class AccessControlTests {
         .andExpect(jsonPath("$.owner").value(a.id().intValue()));
   }
 
+  // O PUT já recusava; o POST gravava. Sem o campo "value" o DTO assume -1, então o caso "ausente" cai na mesma regra
+  @Test
+  void createExpenseWithoutValueIsRejectedAndCreatesNothing() throws Exception {
+    Account a = newAccount("a");
+
+    call(post("/expense"), a, Map.of("owner", a.id())).andExpect(status().isBadRequest());
+
+    assertTrue(expensePersistence.findByOwnerIdWithDetails(a.id()).isEmpty());
+  }
+
+  @Test
+  void createExpenseWithNegativeValueIsRejectedAndCreatesNothing() throws Exception {
+    Account a = newAccount("a");
+
+    call(post("/expense"), a, Map.of("value", -5.0, "owner", a.id())).andExpect(status().isBadRequest());
+
+    assertTrue(expensePersistence.findByOwnerIdWithDetails(a.id()).isEmpty());
+  }
+
+  @Test
+  void createExpenseWithZeroValueStillWorks() throws Exception {
+    Account a = newAccount("a");
+
+    call(post("/expense"), a, Map.of("value", 0.0, "owner", a.id())).andExpect(status().isOk());
+  }
+
   @Test
   void createExpenseIgnoresTheIdSentByTheClient() throws Exception {
     Account a = newAccount("a");

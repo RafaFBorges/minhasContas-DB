@@ -16,6 +16,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import org.springframework.dao.DataIntegrityViolationException;
+
 import com.minhascontasdb.dto.Errors.ErrorResponseDTO;
 import com.minhascontasdb.service.JwtService;
 import com.minhascontasdb.service.User;
@@ -83,6 +85,29 @@ public class ErrorHandlingTests {
     mockMvc.perform(get("/expense/abc").header("Authorization", bearer()))
         .andExpect(status().isBadRequest())
         .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
+  }
+
+  // Erro de banco (constraint, coluna) e argumento inválido de biblioteca eram devolvidos ao cliente com a mensagem original
+  @Test
+  void dataIntegrityViolationIsBadRequestWithoutLeakingTheDatabaseMessage() {
+    ResponseEntity<ErrorResponseDTO> response = new GlobalExceptionHandler().handleDataIntegrityViolation(
+        new DataIntegrityViolationException("ERROR: null value in column \"name\" of relation \"category\" violates not-null constraint segredo"));
+
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    String message = response.getBody().getMessage();
+    assertFalse(message.contains("category"));
+    assertFalse(message.contains("constraint"));
+    assertFalse(message.contains("segredo"));
+  }
+
+  @Test
+  void illegalArgumentIsBadRequestWithoutLeakingTheOriginalMessage() {
+    ResponseEntity<ErrorResponseDTO> response = new GlobalExceptionHandler()
+        .handleIllegalArgument(new IllegalArgumentException("Unknown entity: com.minhascontasdb.service.User segredo"));
+
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertFalse(response.getBody().getMessage().contains("minhascontasdb"));
+    assertFalse(response.getBody().getMessage().contains("segredo"));
   }
 
   // Erro inesperado de verdade continua 500, mas sem expor a mensagem da exceção

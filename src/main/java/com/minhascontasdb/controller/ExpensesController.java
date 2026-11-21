@@ -23,7 +23,6 @@ import com.minhascontasdb.service.User;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,7 +34,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/expense")
-@CrossOrigin(origins = "*")
 public class ExpensesController {
 
   private final ExpensePersistence expensePersistence;
@@ -99,6 +97,10 @@ public class ExpensesController {
   @PostMapping
   public ResponseEntity<ExpenseResponseDTO> createExpense(@RequestBody ExpenseRequestDTO dto,
       @AuthenticationPrincipal AuthUser session) {
+    // Mesma regra do update. Sem o campo "value" o DTO assume -1, que também cai aqui (antes era gravado como despesa)
+    if (!dto.isValidValue())
+      throw new InvalidArgumentsError("Invalid Value");
+
     if (!dto.isValidOwner())
       throw new InvalidArgumentsError("Invalid Owner");
 

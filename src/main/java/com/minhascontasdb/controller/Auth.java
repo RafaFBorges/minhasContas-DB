@@ -2,7 +2,6 @@ package com.minhascontasdb.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,7 +22,6 @@ import jakarta.servlet.http.HttpServletRequest;
 
 // Login, renovação e logout. O access token (JWT) dura pouco e não é revogável; a sessão de verdade é o refresh token
 @RestController
-@CrossOrigin(origins = "*")
 public class Auth {
   private final UserPersistence userRepository;
   private final PasswordEncoder passwordEncoder;

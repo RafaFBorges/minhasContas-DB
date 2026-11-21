@@ -56,7 +56,10 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<ErrorResponseDTO> handleIllegalArgument(IllegalArgumentException e) {
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponseDTO(e.getMessage()));
+    // A mensagem vem de bibliotecas (Hibernate, Jackson...) e pode expor nomes internos: o detalhe fica só no log
+    log.warn("Illegal argument", e);
+
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new InvalidArgumentsError().getResponse());
   }
 
   @ExceptionHandler(InvalidDataAccessResourceUsageException.class)
@@ -71,7 +74,10 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(DataIntegrityViolationException.class)
   public ResponseEntity<ErrorResponseDTO> handleDataIntegrityViolation(DataIntegrityViolationException e) {
-    return ResponseEntity.badRequest().body(new InvalidArgumentsError(e.getMessage()).getResponse());
+    // A mensagem traz SQL, nome de tabela, de constraint e os valores enviados: o detalhe fica só no log
+    log.warn("Data integrity violation", e);
+
+    return ResponseEntity.badRequest().body(new InvalidArgumentsError().getResponse());
   }
 
   // Corpo que não é um JSON válido
